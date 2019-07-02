@@ -11,8 +11,8 @@ module.exports = {
       provider: function() {
         return new HdProvider(
           process.env.MNEMONIC,
-          `https://ropsten.infura.io/${process.env.INFURAKEY}`
-        ); // The last parameter is the account to use from that mnemonic
+          `https://ropsten.infura.io/v3/${process.env.INFURAKEY}`
+        );
       },
       network_id: 3,
       gas: 6e6
@@ -35,8 +35,9 @@ module.exports = {
 
 // Steps to deploy using infura to any network:
 // 1. Install and import 'truffle-hdwallet-provider'
-// 2. Get a mnemonic from 'testrpc' and save it here as a variable
+// 2. Get a mnemonic from 'testrpc' and save it in the .env file
 // 3. Create the configuration with networks: {ropsten: {}}
-// 4. Make sude to provide the HdProvider with the mnemonic, the infura network and the account to use from that mnemonic
-// 5. Deploy with 'truffle migrate --network=ropsten'
-// 6. Make sure to specify the gas to avoid errors
+// 4. Create Infura key and save it to .env file
+// 5. Make sure to provide the HdProvider with the mnemonic and the infura key
+// 6. Deploy with 'source .env && truffle migrate --reset --network=ropsten'
+// 7. Make sure to specify the gas to avoid errors
