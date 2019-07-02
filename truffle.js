@@ -1,22 +1,36 @@
-const HdProvider = require('truffle-hdwallet-provider')
-const mnemonic = 'stamp arch collect second comic carbon custom snake kit between reject category'
+const HdProvider = require("truffle-hdwallet-provider");
+const mnemonic =
+  "stamp arch collect second comic carbon custom snake kit between reject category";
 
 module.exports = {
-	networks: {
-		development: {
-			host: '127.0.0.1',
-			network_id: '*',
-			port: 8545
-		},
-		ropsten: {
-			provider: function () {
-				return new HdProvider(mnemonic, 'https://ropsten.infura.io/6GO3REaLghR6wPhNJQcc', 0) // The last parameter is the account to use from that mnemonic
-			},
-			network_id: 3,
-			gas: 4e6
-		}
-	}
-}
+  networks: {
+    development: {
+      host: "127.0.0.1",
+      network_id: "*",
+      port: 8545
+    },
+    ropsten: {
+      provider: function() {
+        return new HdProvider(
+          mnemonic,
+          "https://ropsten.infura.io/6GO3REaLghR6wPhNJQcc",
+          0
+        ); // The last parameter is the account to use from that mnemonic
+      },
+      network_id: 3,
+      gas: 4e6
+    }
+  },
+  compilers: {
+    solc: {
+      version: "^0.5.1",
+      optimizer: {
+        enabled: true,
+        runs: 200
+      }
+    }
+  }
+};
 
 // Steps to deploy using infura to any network:
 // 1. Install and import 'truffle-hdwallet-provider'

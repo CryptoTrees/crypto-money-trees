@@ -1,5 +1,16 @@
 pragma solidity ^0.5.1;
 
+import 'https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/token/ERC721/ERC721Full.sol';
+import 'https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/token/ERC721/ERC721Mintable.sol';
+import 'https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/token/ERC721/ERC721Burnable.sol';
+import 'https://github.com/OpenZeppelin/openzeppelin-solidity/blob/master/contracts/token/ERC721/ERC721Pausable.sol';
+
+contract CryptoTrees is ERC721Full, ERC721Mintable, ERC721Burnable, ERC721Pausable{
+    constructor() ERC721Full("CryptoTree", "TREE") public {
+    }
+
+}
+
 contract Admin {
   address payable public owner;
   mapping(address => bool) public isAdmin;
@@ -28,7 +39,6 @@ contract Admin {
   }
 }
 
-import './CryptoTrees.sol';
 
 // To add a tree do the following:
 // - Create a new Tree with the ID, owner, treeValue and power to generate fruits
@@ -69,11 +79,11 @@ contract Trees is Admin {
   CryptoTrees public cryptoTree;
 
 
-  constructor (address tokenAddress) public {
+  constructor (CryptoTrees tokenAddress) public {
     cryptoTree = CryptoTrees(tokenAddress);
   }
 
-  function updateTokenContract(address newTokenAddress) external onlyAdmin{
+  function updateTokenContract(CryptoTrees newTokenAddress) external onlyAdmin{
     cryptoTree = CryptoTrees(newTokenAddress);
   }
 
@@ -243,3 +253,5 @@ contract Trees is Admin {
     owner.transfer(address(this).balance);
   }
 }
+
+
