@@ -1,6 +1,4 @@
 const HdProvider = require("truffle-hdwallet-provider");
-const mnemonic =
-  "stamp arch collect second comic carbon custom snake kit between reject category";
 
 module.exports = {
   networks: {
@@ -12,13 +10,12 @@ module.exports = {
     ropsten: {
       provider: function() {
         return new HdProvider(
-          mnemonic,
-          "https://ropsten.infura.io/6GO3REaLghR6wPhNJQcc",
-          0
+          process.env.MNEMONIC,
+          `https://ropsten.infura.io/${process.env.INFURAKEY}`
         ); // The last parameter is the account to use from that mnemonic
       },
       network_id: 3,
-      gas: 4e6
+      gas: 6e6
     }
   },
   compilers: {
