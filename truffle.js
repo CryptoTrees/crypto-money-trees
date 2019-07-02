@@ -20,12 +20,16 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: "^0.5.1",
+      version: "^0.5.10",
       optimizer: {
         enabled: true,
         runs: 200
       }
     }
+  },
+  plugins: ["truffle-plugin-verify"],
+  api_keys: {
+    etherscan: process.env.ETHERSCAN_API
   }
 };
 
