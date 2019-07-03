@@ -29,6 +29,7 @@ contract Admin {
 }
 
 import './CryptoTrees.sol';
+import './AirTokens.sol';
 
 // To add a tree do the following:
 // - Create a new Tree with the ID, owner, treeValue and power to generate fruits
@@ -66,15 +67,18 @@ contract Trees is Admin {
   uint256 public totalTreePower;
   uint256 public timeBetweenRewards = 1 days;
 
-  CryptoTrees public cryptoTree;
+  CryptoTrees public cryptoTrees;
+  AirTokens public airTokens;
 
 
-  constructor (address tokenAddress) public {
-    cryptoTree = CryptoTrees(tokenAddress);
+  constructor (address treesAddress, address airAddress) public {
+    cryptoTrees = CryptoTrees(treesAddress);
+    airTokens = AirTokens(airAddress);
   }
 
-  function updateTokenContract(address newTokenAddress) external onlyAdmin{
-    cryptoTree = CryptoTrees(newTokenAddress);
+  function updateTokenContract(address newTreesAddress, address newAirAddress) external onlyAdmin{
+    cryptoTrees = CryptoTrees(newTreesAddress);
+    airTokens = AirTokens(newAirAddress);
   }
 
   // This will be called automatically by the server
@@ -87,7 +91,7 @@ contract Trees is Admin {
         Tree memory newTree = Tree(newTreeId, defaultTreesOwner, now, defaultTreesPower, defaultSalePrice, 0, emptyArray, true, 0);
 
         // Mint new tree
-        cryptoTree.mint(defaultTreesOwner, newTreeId);
+        cryptoTrees.mint(defaultTreesOwner, newTreeId);
 
         // Update the treeBalances and treeOwner mappings
         // We add the tree to the same array position to find it easier
