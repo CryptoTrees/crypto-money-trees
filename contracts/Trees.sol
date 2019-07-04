@@ -2,6 +2,7 @@ pragma solidity ^0.5.10;
 
 import './CryptoTrees.sol';
 import './AirTokens.sol';
+import 'openzeppelin-solidity/contracts/math/SafeMath.sol';
 
 contract Admin {
   address payable public owner;
@@ -39,6 +40,8 @@ contract Admin {
  */
 contract Trees is Admin {
 
+  using SafeMath for uint256;
+
   // --- EVENTS ---
   event LogWaterTree(uint256 indexed treeId, address indexed owner, uint256 date);
   event LogRewardPicked(uint256 indexed treeId, address indexed owner, uint256 date, uint256 amount);
@@ -52,7 +55,7 @@ contract Trees is Admin {
   // --- TREE Details ---
   struct Tree {
     uint256 treeId;
-    address owner;
+    address payable owner;
     uint256 airProduction; //starts at 1, then add 1 per day
     uint salePrice;
     bool onSale;
@@ -93,7 +96,7 @@ contract Trees is Admin {
     for(uint256 i = 0; i < _amountToGenerate; i++) {
         uint256 newTreeId = cryptoTrees.totalSupply() + 1;
 
-        Tree memory newTree = Tree(newTreeId, address(this), defaultAirProduction, defaultSalePrice, true, 0, 0, 0);
+        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, 0, 0, 0);
 
         // Mint new tree
         cryptoTrees.mint(address(this), newTreeId);
@@ -124,40 +127,33 @@ contract Trees is Admin {
   }
 
   // To buy a tree paying ether
-  function buyTree(uint256 _treeNumber) public payable {
-    require(msg.sender != trees[_treeNumber].owner, 'You already own this tree');
-    require(trees[_treeNumber].onSale, 'Tree is not on sale');
-    require(msg.value >= trees[_treeNumber].salePrice, 'Sale price is higher than the amount sent');
+  function buyTree(uint256 _treeId) public payable {
+    require(msg.sender != trees[_treeId].owner, 'You already own this tree');
+    require(trees[_treeId].onSale, 'Tree is not on sale');
+    require(msg.value >= trees[_treeId].salePrice, 'Sale price is higher than the amount sent');
     address payable newOwner = msg.sender;
 
-    // If its a new tree
-    if(trees[_treeNumber].timesExchanged == 0) {
-        // Transfer ownership of the tree to new owner
-        // default owner needs to approve this contract to transfer kitties
-        cryptoTrees.transferFrom(owner, newOwner, _treeNumber);
-        
-        // Reward the owner for the initial trees as a way of monetization. Keep half for the treasury
-        //owner.transfer(msg.value / 2);
-    } else {
-        // Transfer ownership of the tree to new owner
-        // previous owner needs to approve this contract to transfer kitties (putTreeOnSale function)
-        cryptoTrees.transferFrom(owner, newOwner, _treeNumber);
-        //trees[_treeNumber].owner.transfer(msg.value * 90 / 100); // Keep 0.1% in the treasury
-    }
+    // Transfer ownership of the tree to new owner
+    cryptoTrees.transferFrom(address(this), newOwner, _treeId);
+
+    // If its a new tree, send payment to owner
+    if(trees[_treeId].timesExchanged == 0) owner.transfer(msg.value);
+    // Send payment to previous owner
+    else trees[_treeId].owner.transfer(msg.value);
 
     // Remove the tree from the array of trees on sale
     for(uint256 a = 0; a < treesOnSale.length; a++) {
-        if(treesOnSale[a] == _treeNumber) {
+        if(treesOnSale[a] == _treeId) {
             delete treesOnSale[a];
             break;
         }
     }
     
     //Update tree details
-    trees[_treeNumber].onSale = false;
-    trees[_treeNumber].owner = newOwner;
-    trees[_treeNumber].purchaseDate = now;
-    trees[_treeNumber].timesExchanged += 1;
+    trees[_treeId].onSale = false;
+    trees[_treeId].owner = newOwner;
+    trees[_treeId].purchaseDate = now;
+    trees[_treeId].timesExchanged += 1;
   }
 
   // To take a tree out of the market without selling it
@@ -171,32 +167,75 @@ contract Trees is Admin {
             break;
         }
     }
+    cryptoTrees.transferFrom(address(this), msg.sender, _treeId);
     trees[_treeId].onSale = false;
   }
 
   // To get the AIR tokens from the rewards
   function pickReward(uint256 _treeId) public {
-    require(msg.sender == trees[_treeId].owner);
-    require(now - trees[_treeId].lastAirClaim > timeBetweenRewards);
+    require(msg.sender == trees[_treeId].owner, "You are not the owner of this tree");
+    require(now - trees[_treeId].lastAirClaim > timeBetweenRewards, "You cannot claim rewards yet");
 
     uint256[] memory formatedId = new uint256[](1);
     formatedId[0] = _treeId;
     uint256[] memory rewards = checkRewards(formatedId);
-    trees[_treeId].lastAirClaim = now;
+
+    require(updateAirProduction(_treeId));
+
+    
     msg.sender.transfer(rewards[0]);
+    trees[_treeId].lastAirClaim = now;
     emit LogRewardPicked(_treeId, msg.sender, now, rewards[0]);
   }
 
+  function updateAirProduction(uint256 _treeId) internal returns(bool) {
+    uint256 prevProd = trees[_treeId].airProduction;
+    uint daysPassed = daysSinceLastClaim(_treeId);
 
-  // Returns an array of how much AIR all those trees have generated today
-  // There is a fixed
+    if (prevProd + daysPassed > 100) trees[_treeId].airProduction = 100;
+    else trees[_treeId].airProduction = prevProd + daysPassed;
+
+    return true;
+  }
+
+  function daysSinceLastClaim(uint256 _treeId) public view returns(uint) {
+    uint256 lastClaim = trees[_treeId].lastAirClaim;
+    return (now - lastClaim).div(1 days);
+  }
+
+  // Returns an array of how much AIR the tree Ids ahve generated until today
   function checkRewards(uint256[] memory _treeIds) public view returns(uint256[] memory results) {
+    results = new uint256[](_treeIds.length);
+
+    for(uint256 i = 0; i < _treeIds.length; i++) {
+        uint daysPassed = daysSinceLastClaim(_treeIds[i]);
+        uint256 prevProd = trees[_treeIds[i]].airProduction;
+
+        //Because when it reaches 100 prod, it does not keep increasing
+        if (prevProd == 100) results[i] = daysPassed.mul(100);
+
+        //One scenario when i.e. prod is 88 and 30 days have passed sin last claim
+        //We need to add the prod before 100 and after
+        if (prevProd + daysPassed > 100) {
+          //Add the total air prod until it reached 100
+          uint maxDays = 100;
+          uint incresingDays = maxDays.sub(prevProd);
+          uint firstResults = (incresingDays.mul(prevProd.add(101))).div(2);
+
+          //Add prev result to the mult of days of 100 air prod
+          results[i] = ((prevProd + daysPassed).sub(100)).mul(100);          
+        }
+        // When we can just add the series (because we have not reached 100 prod/day)
+        else results[i] = (daysPassed.mul(prevProd.add(daysPassed))).div(2);
+    }
+    return results;
     
+
   }
 
   // To get all the tree IDs of one user
   function getTreeIds(address _account) public view returns(uint256[] memory) {
-    
+    // ERC20Enumerable has this feature
   }
 
   // To get all the trees on sale
