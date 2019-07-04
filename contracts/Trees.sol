@@ -223,7 +223,7 @@ contract Trees is Admin {
           uint firstResults = (incresingDays.mul(prevProd.add(101))).div(2);
 
           //Add prev result to the mult of days of 100 air prod
-          results[i] = ((prevProd + daysPassed).sub(100)).mul(100);          
+          results[i] = firstResults.add(((prevProd + daysPassed).sub(100)).mul(100));          
         }
         // When we can just add the series (because we have not reached 100 prod/day)
         else results[i] = (daysPassed.mul(prevProd.add(daysPassed))).div(2);
