@@ -1,37 +1,55 @@
+//const BigNumber = require("bignumber.js");
+const BigNumber = web3.utils.BN;
+require("chai")
+  .use(require("chai-shallow-deep-equal"))
+  .use(require("chai-bignumber")(BigNumber))
+  .use(require("chai-as-promised"))
+  .should();
+
 const Trees = artifacts.require("Trees");
 const CryptoTrees = artifacts.require("CryptoTrees");
 const AirTokens = artifacts.require("AirTokens");
 
-let trees, treeToken, airToken;
+const CONTRACT_AIR_ALLOWANCE = new BigNumber(
+  web3.utils.toWei("100000000", "ether")
+);
 
-contract("Trees", accounts => {
-  console.log("Started");
+contract("CryptoTrees", ([admin, user1, user2]) => {
   before(async () => {
-    trees = await Trees.deployed();
-    treeToken = await CryptoTrees.deployed();
-    airToken = await AirTokens.deployed();
+    this.trees = await Trees.deployed();
+    this.treeTokens = await CryptoTrees.deployed();
+    this.airTokens = await AirTokens.deployed();
+
+    await this.treeTokens.addMinter(this.trees.address);
+    await this.airTokens.approve(this.trees.address, CONTRACT_AIR_ALLOWANCE);
   });
-  it("Should show the contract address deployed on the ropsten", async () => {
-    console.log(trees.address);
+
+  describe("Tokens::Access", () => {
+    it("correct owner of base contract", async () => {
+      let owner = await this.trees.owner();
+      owner.should.be.equal(admin);
+    });
+
+    it("correct contract allowance to spend AIR tokens", async () => {
+      let allowance = await this.airTokens.allowance(admin, this.trees.address);
+      allowance.toString().should.be.equal(CONTRACT_AIR_ALLOWANCE.toString());
+    });
+
+    it("correct minter role for TREE tokens", async () => {
+      let isMinter = await this.treeTokens.isMinter(this.trees.address);
+      isMinter.should.be.true;
+    });
   });
-  // No need to try catch since it will fail if there's a catch
-  it("should generate 5 trees by the owner", async () => {
-    const treesGenerated = await trees.generateTrees(5);
+
+  describe("Trees::Minting", () => {
+    it("can generate 5 new trees", async () => {
+      await this.trees.generateTrees(5).should.be.fulfilled;
+      let balance = await this.treeTokens.totalSupply();
+      balance.toNumber().should.be.equal(5);
+    });
+
+    it("only owner can generate trees", async () => {
+      await this.trees.generateTrees(5, { from: user1 }).should.be.rejected;
+    });
   });
-  it(
-    "should only allow the execution of the functions generateTrees, emergencyExtract, addAdmin, removeAdmin by the owner only"
-  );
-  it("should be able to buy a tree for the specified price of 1 ETH");
-  it("should be able to sell a tree for any price");
-  it("should give 50% of the first generation trees to the CEO");
-  it("should give 50% of the first generation trees to the treasury");
-  it("should give 10% of the second hand tress to the treasury");
-  it("should increase the tree power by watering it by the owner of it");
-  it("should only allow the water of trees once per day");
-  it(
-    "should generate a daily reward for all the trees of the total 10% of the treasury"
-  );
-  it(
-    "should be able to extract the balance of the contract to the owner in an emergency with emergencyExtract"
-  );
 });

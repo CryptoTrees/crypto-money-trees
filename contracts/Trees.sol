@@ -96,7 +96,10 @@ contract Trees is Admin {
     for(uint256 i = 0; i < _amountToGenerate; i++) {
         uint256 newTreeId = cryptoTrees.totalSupply() + 1;
 
-        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, 0, 0, 0);
+        //Only for development phase, set lastAirClaim from 0-20 days ago randomly
+        uint256 lastAirClaim = uint256(keccak256(abi.encodePacked(newTreeId, now))).mod(20);
+        
+        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now - (lastAirClaim * 1 days), 0, 0);
 
         // Mint new tree
         cryptoTrees.mint(address(this), newTreeId);
@@ -182,8 +185,9 @@ contract Trees is Admin {
 
     require(updateAirProduction(_treeId));
 
-    
-    msg.sender.transfer(rewards[0]);
+    // Send AIR tokens to owner of TREE
+    airTokens.transferFrom(owner, msg.sender, rewards[0]);
+
     trees[_treeId].lastAirClaim = now;
     emit LogRewardPicked(_treeId, msg.sender, now, rewards[0]);
   }
@@ -228,14 +232,13 @@ contract Trees is Admin {
         // When we can just add the series (because we have not reached 100 prod/day)
         else results[i] = (daysPassed.mul(prevProd.add(daysPassed))).div(2);
     }
-    return results;
-    
+    return results;   
 
   }
 
   // To get all the tree IDs of one user
-  function getTreeIds(address _account) public view returns(uint256[] memory) {
-    // ERC20Enumerable has this feature
+  function getOwnerTrees(address _account) public view returns(uint256[] memory) {
+    return cryptoTrees.getOwnerTrees(_account);
   }
 
   // To get all the trees on sale
@@ -243,7 +246,7 @@ contract Trees is Admin {
       return treesOnSale;
   }
 
-  // To extract the ether in an emergency
+  // To extract all tokens in an emergency
   function emergencyExtract() public onlyOwner {
     owner.transfer(address(this).balance);
   }
