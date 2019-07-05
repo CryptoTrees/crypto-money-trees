@@ -30,6 +30,14 @@ module.exports = {
   plugins: ["truffle-plugin-verify"],
   api_keys: {
     etherscan: process.env.ETHERSCAN_API
+  },
+  mocha: {
+    useColors: true,
+    reporter: "eth-gas-reporter",
+    reporterOptions: {
+      currency: "USD",
+      gasPrice: 20
+    }
   }
 };
 
