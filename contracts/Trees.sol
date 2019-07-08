@@ -156,7 +156,7 @@ contract Trees is Admin {
     trees[_treeId].onSale = false;
     trees[_treeId].owner = newOwner;
     trees[_treeId].purchaseDate = now;
-    trees[_treeId].timesExchanged += trees[_treeId].timesExchanged.add(1);
+    trees[_treeId].timesExchanged = trees[_treeId].timesExchanged.add(1);
   }
 
   // To take a tree out of the market without selling it
