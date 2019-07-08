@@ -44,7 +44,7 @@ class App extends React.Component {
 	}
 
 	async getTreeIds() {
-		const result = await contract.getTreeIdsAsync(web3.eth.accounts[0], {
+		const result = await contract.getOwnerTreesAsync(web3.eth.accounts[0], {
 			from: web3.eth.accounts[0]
 		})
 		return result
