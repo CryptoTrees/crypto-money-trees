@@ -43,11 +43,7 @@ contract Trees is Admin {
   using SafeMath for uint256;
 
   // --- EVENTS ---
-  event LogWaterTree(uint256 indexed treeId, address indexed owner, uint256 date);
   event LogRewardPicked(uint256 indexed treeId, address indexed owner, uint256 date, uint256 amount);
-
-  // Get the tree information given the id
-  mapping(uint256 => Tree) public trees;
 
   // A mapping with all the tree IDs of that owner
   // mapping(address => uint256[]) public ownerTreesIds;
@@ -63,6 +59,9 @@ contract Trees is Admin {
     uint purchaseDate;
     uint timesExchanged;
   }
+
+   // Get the tree information given the id
+  mapping(uint256 => Tree) public trees;
 
   uint256[] public treesOnSale;
 
@@ -94,12 +93,12 @@ contract Trees is Admin {
    */
   function generateTrees(uint256 _amountToGenerate) public onlyAdmin {
     for(uint256 i = 0; i < _amountToGenerate; i++) {
-        uint256 newTreeId = cryptoTrees.totalSupply() + 1;
+        uint256 newTreeId = cryptoTrees.totalSupply().add(1);
 
-        //Only for development phase, set lastAirClaim from 0-20 days ago randomly
-        uint256 lastAirClaim = uint256(keccak256(abi.encodePacked(newTreeId, now))).mod(20);
+        //Only for development phase, set lastAirClaim from 1-20 days ago randomly
+        uint256 lastAirClaim = uint256(keccak256(abi.encodePacked(newTreeId, now))).mod(20).add(1);
         
-        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now - (lastAirClaim * 1 days), 0, 0);
+        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now.sub((lastAirClaim.mul(1 days))), 0, 0);
 
         // Mint new tree
         cryptoTrees.mint(address(this), newTreeId);
@@ -119,9 +118,10 @@ contract Trees is Admin {
   function putTreeOnSale(uint256 _treeNumber, uint256 _salePrice) public {
     require(msg.sender == trees[_treeNumber].owner, 'You are not the owner of this tree');
     require(!trees[_treeNumber].onSale, 'Tree is already on sale');
-    require(_salePrice > 0, 'Sale price has too be grater than 0');
+    require(_salePrice > 0, 'Sale price has too be greater than 0');
 
-    // User needs to approve this contract to transfer tokens first
+    // User needs to approve this contract to transfer the tree to us
+    require(cryptoTrees.getApproved(_treeNumber) == address(this), "You need to approve this contract first");    
     cryptoTrees.transferFrom(msg.sender, address(this), _treeNumber);
 
     treesOnSale.push(_treeNumber);
@@ -177,7 +177,7 @@ contract Trees is Admin {
   // To get the AIR tokens from the rewards
   function pickReward(uint256 _treeId) public {
     require(msg.sender == trees[_treeId].owner, "You are not the owner of this tree");
-    require(now - trees[_treeId].lastAirClaim > timeBetweenRewards, "You cannot claim rewards yet");
+    require(now.sub(trees[_treeId].lastAirClaim) > timeBetweenRewards, "You cannot claim rewards yet");
 
     uint256[] memory formatedId = new uint256[](1);
     formatedId[0] = _treeId;
@@ -186,7 +186,7 @@ contract Trees is Admin {
     require(updateAirProduction(_treeId));
 
     // Send AIR tokens to owner of TREE
-    airTokens.transferFrom(owner, msg.sender, rewards[0]);
+    airTokens.transferFrom(owner, msg.sender, rewards[0].mul(1 ether));
 
     trees[_treeId].lastAirClaim = now;
     emit LogRewardPicked(_treeId, msg.sender, now, rewards[0]);
@@ -196,15 +196,15 @@ contract Trees is Admin {
     uint256 prevProd = trees[_treeId].airProduction;
     uint daysPassed = daysSinceLastClaim(_treeId);
 
-    if (prevProd + daysPassed > 100) trees[_treeId].airProduction = 100;
-    else trees[_treeId].airProduction = prevProd + daysPassed;
+    if (prevProd.add(daysPassed) > 100) trees[_treeId].airProduction = 100;
+    else trees[_treeId].airProduction = prevProd.add(daysPassed);
 
     return true;
   }
 
   function daysSinceLastClaim(uint256 _treeId) public view returns(uint) {
     uint256 lastClaim = trees[_treeId].lastAirClaim;
-    return (now - lastClaim).div(1 days);
+    return (now.sub(lastClaim).div(1 days));
   }
 
   // Returns an array of how much AIR the tree Ids ahve generated until today
@@ -227,7 +227,7 @@ contract Trees is Admin {
           uint firstResults = (incresingDays.mul(prevProd.add(101))).div(2);
 
           //Add prev result to the mult of days of 100 air prod
-          results[i] = firstResults.add(((prevProd + daysPassed).sub(100)).mul(100));          
+          results[i] = firstResults.add(((prevProd.add(daysPassed)).sub(100)).mul(100));          
         }
         // When we can just add the series (because we have not reached 100 prod/day)
         else results[i] = (daysPassed.mul(prevProd.add(daysPassed))).div(2);

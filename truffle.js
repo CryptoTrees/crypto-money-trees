@@ -32,11 +32,13 @@ module.exports = {
     etherscan: process.env.ETHERSCAN_API
   },
   mocha: {
+    enableTimeouts: false,
     useColors: true,
     reporter: "eth-gas-reporter",
     reporterOptions: {
       currency: "USD",
-      gasPrice: 20
+      gasPrice: 21,
+      showTimeSpent: true
     }
   }
 };
