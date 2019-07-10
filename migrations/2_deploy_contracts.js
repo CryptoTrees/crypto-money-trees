@@ -10,5 +10,9 @@ module.exports = deployer => {
     })
     .then(() => {
       return deployer.deploy(Trees, CryptoTrees.address, AirTokens.address);
+    })
+    .then(async () => {
+      let tokenTreesInst = await CryptoTrees.deployed();
+      await tokenTreesInst.addMinter(Trees.address);
     });
 };
