@@ -185,15 +185,12 @@ class InitialPage extends React.Component {
             <div className="row">
               <div className="spacer-30" />
               <div className="col-12">
-                <h1>Who said money doesn't grow on trees?</h1>
+                <h1 className="initial-title">Crypto Trees</h1>
               </div>
               <div className="top-spacer" />
               <div className="col-12">
-                <h3>Crypto Trees</h3>
-              </div>
-              <div className="col-12">
                 <p>
-                  <i>Where trees actually generate crypto money ETH daily</i>
+                  <i className="initial-subtitle">Simplifying tree planting with crypto rewards</i>
                 </p>
               </div>
               <div className="top-spacer" />
@@ -205,39 +202,10 @@ class InitialPage extends React.Component {
             </div>
           </div>
         </div>
-        <div className="background-grey">
-          <div className="container initial-half-container">
-            <div className="spacer-7" />
-            <div className="row">
-              <h2>Wait, how does this work?</h2>
-            </div>
-            <div className="row">
-              <ol className="row">
-                <li className="col-sm-4">
-                  Buy a tree in the market to start generating Ether
-                </li>
-                <li className="col-sm-4">
-                  Pick your daily ETH rewards, water the tree to increase its
-                  power and generate bigger rewards
-                </li>
-                <li className="col-sm-4">
-                  Keep making real ETH by just having trees and sell them for a
-                  profit whenever you want
-                </li>
-                <img src="imgs/buy-tree.gif" className="col-sm-4 height-200" />
-                <img
-                  src="imgs/water-reward.gif"
-                  className="col-sm-4 height-200"
-                />
-                <img src="imgs/sell-tree.gif" className="col-sm-4 height-200" />
-              </ol>
-            </div>
-          </div>
-        </div>
         <div className="container initial-half-container">
           <div className="spacer-20" />
           <div className="row">
-            <h2>How is this possible?</h2>
+            <h2>Understanding Tree Power</h2>
             <p>
               Each time someone buys a tree, a portion of the payment goes to
               the treasury where a percentage is distributed daily accross all
