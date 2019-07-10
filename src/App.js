@@ -589,7 +589,7 @@ class TreeBox extends React.Component {
         <a
           href={`https://ropsten.etherscan.io/token/${treesTokenAddress}?a=${
             this.props.id
-          }`}
+            }`}
           target="_blank"
         >
           <h4>Id {this.props.id}</h4>
@@ -618,7 +618,7 @@ class TreeBox extends React.Component {
             try {
               await this.props.pickReward(this.props.id);
               this.setState({ rewardClicked: true });
-            } catch (e) {}
+            } catch (e) { }
           }}
         >
           {this.props.reward > 0 && this.state.rewardAvailableToday
@@ -715,7 +715,7 @@ class TreeBox extends React.Component {
               try {
                 await this.props.cancelSell(this.props.id);
                 this.setState({ showCancelSell: false });
-              } catch (e) {}
+              } catch (e) { }
             }}
           >
             Yes, cancel sell
@@ -765,7 +765,7 @@ class TreeMarketBox extends React.Component {
         <a
           href={`https://ropsten.etherscan.io/token/${treesTokenAddress}?a=${
             this.props.id
-          }`}
+            }`}
           target="_blank"
         >
           <h4>Id {this.props.id}</h4>
@@ -796,7 +796,7 @@ class TreeMarketBox extends React.Component {
                 this.props.price
               );
               this.setState({ buyClicked: true });
-            } catch (e) {}
+            } catch (e) { }
           }}
         >
           Buy Tree

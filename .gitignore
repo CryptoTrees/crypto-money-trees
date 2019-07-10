@@ -59,4 +59,4 @@ typings/
 
 # compiled contracts
 build/
-
+dist/build.js
