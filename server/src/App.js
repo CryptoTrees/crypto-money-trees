@@ -562,7 +562,7 @@ class TreeBox extends React.Component {
     // } else {
     // 	return 'imgs/5.jpg'
     // }
-    return "imgs/tree-big.png"; // TODO Change this to the evolving images
+    return "imgs/tree-big.jpg"; // TODO Change this to the evolving images
   }
 
   render() {
@@ -738,7 +738,7 @@ class TreeMarketBox extends React.Component {
     // } else {
     // 	return 'imgs/5.jpg'
     // }
-    return "imgs/tree-big.png"; // TODO Change this to the evolving images
+    return "imgs/tree-big.jpg"; // TODO Change this to the evolving images
   }
 
   render() {
