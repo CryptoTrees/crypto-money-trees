@@ -65,9 +65,6 @@ contract Trees is Admin {
 
   uint256[] public treesOnSale;
 
-  //Initil owner when trees are generated
-  address public defaultTreesOwner = msg.sender;
-
   uint256 public defaultAirProduction = 1; // 1 AIR token per day
   uint256 public defaultSalePrice = 1 ether; // 1 AIR
   uint256 public timeBetweenRewards = 1 days;
@@ -83,9 +80,28 @@ contract Trees is Admin {
     airTokens = AirTokens(airAddress);
   }
 
+  /**
+   * @notice Updates tokens contract addresses
+   */
   function updateTokenContract(address newTreesAddress, address newAirAddress) external onlyAdmin{
     cryptoTrees = CryptoTrees(newTreesAddress);
     airTokens = AirTokens(newAirAddress);
+  }
+
+  /**
+   * @notice Updates contract default values
+   */
+  function updateDefaultValues
+  (
+    uint _defaultAirProduction, uint _defaultSalePrice, 
+    uint _timeBetweenRewards, uint _airExchangeRate
+  ) 
+    external onlyAdmin
+  {
+    defaultAirProduction = _defaultAirProduction;
+    defaultSalePrice = _defaultSalePrice;
+    timeBetweenRewards = _timeBetweenRewards;
+    airExchangeRate = _airExchangeRate;
   }
 
   /**
@@ -154,8 +170,8 @@ contract Trees is Admin {
     require(trees[_treeId].onSale, 'Tree is not on sale');
     require(airTokens.allowance(msg.sender, address(this)) >= trees[_treeId].salePrice, 'Sale price is higher than the amount allowed to spend');
     
-    // If its a new tree, send payment to owner fo contract
-    if(trees[_treeId].timesExchanged == 0) airTokens.transferFrom(msg.sender, address(this), trees[_treeId].salePrice);
+    // If its a new tree, send payment to owner of contract
+    if(trees[_treeId].timesExchanged == 0) airTokens.transferFrom(msg.sender, owner, trees[_treeId].salePrice);
     // Else, send payment to previous owner
     else airTokens.transferFrom(msg.sender, trees[_treeId].owner, trees[_treeId].salePrice);
 
