@@ -6,26 +6,29 @@ import firebase from 'firebase'
 import StyledFirebaseAuth from 'react-firebaseui/StyledFirebaseAuth'
 import { promisifyAll } from "bluebird"
 import { abi as contractAbi } from "./../build/contracts/Trees.json"
+import { abi as treeTokenAbi } from "./../build/contracts/CryptoTrees.json"
+import { abi as airTokenAbi } from "./../build/contracts/AirTokens.json"
 import "./index.styl"
 
 // 1 day -> 0x59b42857df02690ea5796483444976dbc5512d9e ropsten
 // 1 second -> 0xa783ce9bcf718f8c6c22f7585c54c30c406588f7 ropsten
 // 1 day mainnet -> 0xFfFce2Dc587BadBD10B4Fe17F0F5F293458f6793
 // const contractAddress = '0xFfFce2Dc587BadBD10B4Fe17F0F5F293458f6793' // Mainnet
-const contractAddress = "0x592975c122e1a51df1ee0637637d71fc0a80f0e5"; // Ropsten
-// const contractAddress = "0x80ed44f4b303bf73e2dfdbfe175e5520f330511d"; // Ganache
 
-const treesTokenAddress = "0x61bae4f3d4fbd24ddf0eb4399805bd53a0ede3d3"; // Ropsten
-const airTokenAddress = "0x21d75ad572b827677df351cd851f7027f5b1a7eb"; // Ropsten
+// --- CONTRACTS ---
+const contractAddress = "0xde900a6dad75deab99b6fcb297ae7812806ec09a";
+const treesTokenAddress = "0xeab8f2ba0d9df34ca3df26ae2eb6e1347ae223c0";
+const airTokenAddress = "0xa1360d0eade8c56279eb25a6822c9cca64674a98";
+
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAsg_zSvo2eL_ZqkDUAj3FJCWljRdGzOpM",
-    authDomain: "node-trees.firebaseapp.com",
-    databaseURL: "https://node-trees.firebaseio.com",
-    projectId: "node-trees",
-    storageBucket: "",
-    messagingSenderId: "701310308414",
-    appId: "1:701310308414:web:b82064618f7e2748"
+  apiKey: "AIzaSyAsg_zSvo2eL_ZqkDUAj3FJCWljRdGzOpM",
+  authDomain: "node-trees.firebaseapp.com",
+  databaseURL: "https://node-trees.firebaseio.com",
+  projectId: "node-trees",
+  storageBucket: "",
+  messagingSenderId: "701310308414",
+  appId: "1:701310308414:web:b82064618f7e2748"
 }
 const uiConfig = {
   // Popup signin flow rather than redirect flow.
@@ -42,79 +45,95 @@ const uiConfig = {
 firebase.initializeApp(firebaseConfig);
 
 class App extends React.Component {
-    constructor() {
-        super()
-        const isEthereumDefined = typeof ethereum != 'undefined'
-        this.state = {
-            isEthereumDefined
-        }
-        if(isEthereumDefined) this.setup()
+  constructor() {
+    super()
+    const isEthereumDefined = typeof ethereum != 'undefined'
+    this.state = {
+      isEthereumDefined
     }
+    if (isEthereumDefined) this.setup()
+  }
 
-    async setup() {
-        window.myWeb3 = new Web3(ethereum);
-        try {
-            await ethereum.enable()
-        } catch (error) {
-            console.error("You must approve this dApp to interact with it")
-        }
-        console.log("Connected Account: ", web3.eth.accounts[0])
-        window.contract = web3.eth.contract(contractAbi).at(contractAddress)
-        promisifyAll(contract)
+  async setup() {
+    window.myWeb3 = new Web3(ethereum);
+    try {
+      await ethereum.enable()
+    } catch (error) {
+      console.error("You must approve this dApp to interact with it")
     }
+    console.log("Connected Account: ", web3.eth.accounts[0])
+
+    window.contract = web3.eth.contract(contractAbi).at(contractAddress);
+    promisifyAll(contract);
+
+    window.treeContract = web3.eth.contract(treeTokenAbi).at(treesTokenAddress);
+    promisifyAll(treeContract);
+
+    window.airContract = web3.eth.contract(airTokenAbi).at(airTokenAddress);
+    promisifyAll(airContract);
+  }
 
   async generateTree() {
-    const result = await contract.generateTreesAsync({
+    let result = await contract.generateTreesAsync({
       from: web3.eth.accounts[0]
     });
     return result;
   }
 
   async getTreeDetails(id) {
-    const result = await contract.treesAsync(id, {
+    let result = await contract.treesAsync(id, {
       from: web3.eth.accounts[0]
     });
     return result;
   }
 
   async getTreeIds() {
-    const result = await contract.getOwnerTreesAsync(web3.eth.accounts[0], {
+    let result = await contract.getOwnerTreesAsync(web3.eth.accounts[0], {
       from: web3.eth.accounts[0]
     });
     return result;
   }
 
   async putTreeOnSale(id, price) {
-    const result = await contract.putTreeOnSaleAsync(id, price, {
+    //Approve Tree token
+    let result = await treeContract.approveAsync(contractAddress, id, {
+      from: web3.eth.accounts[0]
+    })
+    //Send sell call
+    result = await contract.putTreeOnSaleAsync(id, web3.toWei(price), {
       from: web3.eth.accounts[0]
     });
     return result;
   }
 
   async buyTree(id, price) {
-    const result = await contract.buyTreeAsync(id, {
-      from: web3.eth.accounts[0],
-      value: price
+    //Approve AIR tokens
+    let result = await airContract.approveAsync(contractAddress, web3.toWei(price), {
+      from: web3.eth.accounts[0]
+    })
+    //Send buy call
+    result = await contract.buyTreeAsync(id, {
+      from: web3.eth.accounts[0]
     });
     return result;
   }
 
   async getTreesOnSale() {
-    const result = await contract.getTreesOnSaleAsync({
+    let result = await contract.getTreesOnSaleAsync({
       from: web3.eth.accounts[0]
     });
     return result;
   }
 
   async cancelTreeSell(id) {
-    const result = await contract.cancelTreeSellAsync(id, {
+    let result = await contract.cancelTreeSellAsync(id, {
       from: web3.eth.accounts[0]
     });
     return result;
   }
 
   async pickReward(id) {
-    const result = await contract.pickRewardAsync(id, {
+    let result = await contract.pickRewardAsync(id, {
       from: web3.eth.accounts[0]
     });
     return result;
@@ -122,6 +141,13 @@ class App extends React.Component {
 
   async checkRewards(ids) {
     const result = await contract.checkRewardsAsync(ids, {
+      from: web3.eth.accounts[0]
+    });
+    return result;
+  }
+
+  async checkAirProductions(ids) {
+    const result = await contract.getTreesAirProductionAsync(ids, {
       from: web3.eth.accounts[0]
     });
     return result;
@@ -136,9 +162,9 @@ class App extends React.Component {
       <BrowserRouter>
         <Switch>
           <Route path="/" exact render={() => (
-              <InitialPage
-                isEthereumDefined={this.state.isEthereumDefined}
-              />
+            <InitialPage
+              isEthereumDefined={this.state.isEthereumDefined}
+            />
           )} />
           <Route
             path="/my-trees"
@@ -173,13 +199,14 @@ class App extends React.Component {
                 getTreeIds={() => this.getTreeIds()}
                 getTreeDetails={id => this.getTreeDetails(id)}
                 buyTree={(id, price) => this.buyTree(id, price)}
+                checkAirProductions={(ids) => this.checkAirProductions(ids)}
               />
             )}
           />
           <Route
             path="/login"
             render={context => (
-                <Login />
+              <Login />
             )}
           />
         </Switch>
@@ -222,9 +249,9 @@ class InitialPage extends React.Component {
         <div className="container initial-half-container">
           <div className="spacer-20" />
           <div className="row">
-            <h2>Understanding Tree Power</h2>
+            <h2>Understanding Air Production</h2>
             <p>
-              Each time someone buys a tree, a portion of the payment goes to
+              Everytime we plant a tree, it will start pr
               the treasury where a percentage is distributed daily accross all
               the tree owners. The more tree power your tree has, the bigger
               portion of rewards you get.
@@ -423,8 +450,12 @@ class Market extends React.Component {
     // If there's at least one tree on sale not yours, get them details and show em
     if (treesToShow.length > 0) {
       let allTrees = [];
+      let airProductions = await this.props.checkAirProductions(treesToShow)
+      //console.log(airProductions)
+
       for (let i = 0; i < treesToShow.length; i++) {
         let details = await this.props.getTreeDetails(treesToShow[i]);
+        details[2] = airProductions[i];
 
         // Remove the 0x trees
         if (details[1] === "0x0000000000000000000000000000000000000000")
@@ -444,7 +475,7 @@ class Market extends React.Component {
             (Math.floor(Date.now() / 1000) - detail[5]) / 86400
           )} // How many days passed after the creation of this tree
           airProduction={detail[2]}
-          buyTree={(id, owner, price) => this.props.buyTree(id, detail[3])}
+          buyTree={(id, price) => this.props.buyTree(id, price)}
           price={web3.fromWei(detail[3], "ether")}
           key={detail[0]}
         />
@@ -545,7 +576,7 @@ class TreeBox extends React.Component {
       waterClicked: false,
       rewardAvailableToday:
         Math.floor(Date.now() / 1000) - 1517245959 > 60 * 60 * 24, // If a day has passed since the last reward picked or not
-      amountToSell: 1.5,
+      amountToSell: 1,
       image: this.getImageAirProduction(this.props.airProduction)
     };
   }
@@ -591,7 +622,7 @@ class TreeBox extends React.Component {
           <span className="color-red">{this.props.onSale.toString()}</span>
         </p>
         <button
-          className="wide-button"
+          className="full-button"
           disabled={
             this.props.reward === 0 ||
             this.state.rewardClicked ||
@@ -635,7 +666,7 @@ class TreeBox extends React.Component {
             this.state.showSellConfirmation1 ? "full-button" : "hidden"
           }
         >
-          <p>At what price do you want to sell your tree in ETH?</p>
+          <p>At what price do you want to sell your tree in AIR?</p>
           <input
             key={this.props.id}
             className="wide-button"
@@ -662,10 +693,7 @@ class TreeBox extends React.Component {
         >
           <p>
             Are you sure you want to put on sale this tree for{" "}
-            {this.state.amountToSell} ETH now?{" "}
-            {(this.state.amountToSell * 0.1).toFixed(2)} ETH will go to the
-            treasury after the sale, you'll get{" "}
-            {(this.state.amountToSell * 0.9).toFixed(2)} ETH.
+            {this.state.amountToSell} AIR?{" "}
           </p>
           <button
             className="wide-button"
@@ -674,7 +702,7 @@ class TreeBox extends React.Component {
               this.setState({ showSellConfirmation1: false });
               this.props.sellTree(
                 this.props.id,
-                web3.toWei(this.state.amountToSell, "ether")
+                this.state.amountToSell
               );
             }}
           >
@@ -782,7 +810,7 @@ class TreeMarketBox extends React.Component {
             } catch (e) { }
           }}
         >
-          Buy Tree
+          Buy Tree ({this.props.price} AIR)
         </button>
       </div>
     );
@@ -797,46 +825,46 @@ class Information extends React.Component {
   render() {
     return (
       <div className="container">
-          <div className="row">
-            <h5 className="margin-auto-and-top">{this.props.message}</h5>
-          </div>
-          <div className="row">
-              <p
-                className={
-                  this.props.subTitle === undefined ? "hidden" : "margin-auto"
-                }
-              >
-                {this.props.subTitle}
-              </p>
-          </div>
+        <div className="row">
+          <h5 className="margin-auto-and-top">{this.props.message}</h5>
+        </div>
+        <div className="row">
+          <p
+            className={
+              this.props.subTitle === undefined ? "hidden" : "margin-auto"
+            }
+          >
+            {this.props.subTitle}
+          </p>
+        </div>
       </div>
     );
   }
 }
 
 class Login extends React.Component {
-    constructor () {
-        super()
-    }
+  constructor() {
+    super()
+  }
 
-    render () {
-        return (
-            <div>
-                <NavBar />
-                <div className="container">
-                    <div className="row">
-                        <Information
-                          message="Metamask not detected"
-                          subTitle="Create an account or connect to metamask to begin"
-                        />
-                    </div>
-                    <div className="row justify-content-center">
-                        <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={firebase.auth()}/>
-                    </div>
-                </div>
-            </div>
-        )
-    }
+  render() {
+    return (
+      <div>
+        <NavBar />
+        <div className="container">
+          <div className="row">
+            <Information
+              message="Metamask not detected"
+              subTitle="Create an account or connect to metamask to begin"
+            />
+          </div>
+          <div className="row justify-content-center">
+            <StyledFirebaseAuth uiConfig={uiConfig} firebaseAuth={firebase.auth()} />
+          </div>
+        </div>
+      </div>
+    )
+  }
 }
 
 render(<App />, document.querySelector("#root"));
