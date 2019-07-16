@@ -65,3 +65,5 @@ public/build.js
 
 # modules
 server/package-lock.json
+
+remix

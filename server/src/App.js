@@ -16,9 +16,9 @@ import "./index.styl"
 // const contractAddress = '0xFfFce2Dc587BadBD10B4Fe17F0F5F293458f6793' // Mainnet
 
 // --- CONTRACTS ---
-const contractAddress = "0xde900a6dad75deab99b6fcb297ae7812806ec09a";
-const treesTokenAddress = "0xeab8f2ba0d9df34ca3df26ae2eb6e1347ae223c0";
-const airTokenAddress = "0xa1360d0eade8c56279eb25a6822c9cca64674a98";
+const contractAddress = "0xe5957fbB650403FaE8400c7a4A74f592D909566e";
+const treesTokenAddress = "0x2E23413cabfAE218823ee17FcF110757aE7386b7";
+const airTokenAddress = "0xB327A0fa7974BC1A16912D40AC96eB26cd664E41";
 
 
 const firebaseConfig = {
@@ -49,108 +49,118 @@ class App extends React.Component {
     super()
     const isEthereumDefined = typeof ethereum != 'undefined'
     this.state = {
-      isEthereumDefined
+      isEthereumDefined,
+      currentAccount: ""
     }
     if (isEthereumDefined) this.setup()
   }
 
   async setup() {
-    window.myWeb3 = new Web3(ethereum);
-    try {
-      await ethereum.enable()
-    } catch (error) {
-      console.error("You must approve this dApp to interact with it")
+    let accounts
+    if (window.ethereum) {
+      window.web3 = new Web3(ethereum);
+      try {
+        await ethereum.enable()
+        accounts = await web3.eth.getAccounts()
+      } catch (error) {
+        console.error("You must approve this dApp to interact with it")
+      }
+      console.log("Connected Account: ", accounts[0])
+
+      ethereum.on('accountsChanged', function (accounts) {
+        console.log('Account Changed!'); !
+          this.setState({ currentAccount: accounts[0] })
+      })
     }
-    console.log("Connected Account: ", web3.eth.accounts[0])
+    else if (window.web3) {
+      console.log('web3')
+      window.web3 = new Web3(web3.currentProvider);
+    }
+    else {
+      console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+      window.web3 = new Web3('https://ropsten.infura.io/v3/6a622f155ca346e1b3521e8160c71b65');
+    }
 
-    window.contract = web3.eth.contract(contractAbi).at(contractAddress);
-    promisifyAll(contract);
+    window.contract = new web3.eth.Contract(contractAbi, contractAddress)
+    window.treeContract = new web3.eth.Contract(treeTokenAbi, treesTokenAddress)
+    window.airContract = new web3.eth.Contract(airTokenAbi, airTokenAddress)
 
-    window.treeContract = web3.eth.contract(treeTokenAbi).at(treesTokenAddress);
-    promisifyAll(treeContract);
-
-    window.airContract = web3.eth.contract(airTokenAbi).at(airTokenAddress);
-    promisifyAll(airContract);
+    this.setState({ currentAccount: accounts[0] })
   }
 
-  async generateTree() {
-    let result = await contract.generateTreesAsync({
-      from: web3.eth.accounts[0]
+  async generateTree(amount) {
+    let result = await contract.methods.generateTrees(amount).send({
+      from: this.state.currentAccount
     });
     return result;
   }
 
   async getTreeDetails(id) {
-    let result = await contract.treesAsync(id, {
-      from: web3.eth.accounts[0]
-    });
+    let result = await contract.methods.trees(id).call()
     return result;
   }
 
   async getTreeIds() {
-    let result = await contract.getOwnerTreesAsync(web3.eth.accounts[0], {
-      from: web3.eth.accounts[0]
-    });
+    let result = await contract.methods.getOwnerTrees(this.state.currentAccount).call()
     return result;
   }
 
   async putTreeOnSale(id, price) {
     //Approve Tree token
-    let result = await treeContract.approveAsync(contractAddress, id, {
-      from: web3.eth.accounts[0]
+    let result = await treeContract.methods.approve(contractAddress, id).send({
+      from: this.state.currentAccount
     })
     //Send sell call
-    result = await contract.putTreeOnSaleAsync(id, web3.toWei(price), {
-      from: web3.eth.accounts[0]
+    result = await contract.methods.putTreeOnSale(id, web3.utils.toWei(price)).send({
+      from: this.state.currentAccount
     });
     return result;
   }
 
   async buyTree(id, price) {
     //Approve AIR tokens
-    let result = await airContract.approveAsync(contractAddress, web3.toWei(price), {
-      from: web3.eth.accounts[0]
+    await airContract.methods.approve(contractAddress, web3.utils.toWei(price)).send({
+      from: this.state.currentAccount
     })
     //Send buy call
-    result = await contract.buyTreeAsync(id, {
-      from: web3.eth.accounts[0]
+    result = await contract.methods.buyTree(id).send({
+      from: this.state.currentAccount
     });
     return result;
+
   }
 
   async getTreesOnSale() {
-    let result = await contract.getTreesOnSaleAsync({
-      from: web3.eth.accounts[0]
-    });
+    let result = await contract.methods.getTreesOnSale().call()
     return result;
   }
 
   async cancelTreeSell(id) {
-    let result = await contract.cancelTreeSellAsync(id, {
-      from: web3.eth.accounts[0]
+    let result = await contract.methods.cancelTreeSell(id).send({
+      from: this.state.currentAccount
     });
     return result;
   }
 
   async pickReward(id) {
-    let result = await contract.pickRewardAsync(id, {
-      from: web3.eth.accounts[0]
+    let result = await contract.methods.pickReward(id).send({
+      from: this.state.currentAccount
     });
     return result;
   }
 
   async checkRewards(ids) {
-    const result = await contract.checkRewardsAsync(ids, {
-      from: web3.eth.accounts[0]
+    let result = await contract.methods.checkRewards(ids).call({
+      from: this.state.currentAccount
     });
     return result;
   }
 
   async checkAirProductions(ids) {
-    const result = await contract.getTreesAirProductionAsync(ids, {
-      from: web3.eth.accounts[0]
-    });
-    return result;
+    //TODO: check function on smart contract
+    //const result = await contract.methods.getTreesAirProduction(ids).call()
+    //console.log('air productions', result);
+    return Array(ids.length).fill(1);
   }
 
   redirectTo(history, location) {
@@ -200,6 +210,7 @@ class App extends React.Component {
                 getTreeDetails={id => this.getTreeDetails(id)}
                 buyTree={(id, price) => this.buyTree(id, price)}
                 checkAirProductions={(ids) => this.checkAirProductions(ids)}
+                currentAccount={this.state.currentAccount}
               />
             )}
           />
@@ -279,6 +290,7 @@ class MyTrees extends React.Component {
   }
 
   async init() {
+
     await this.props.setup();
     let allTrees = [];
     let allRewards = [];
@@ -287,10 +299,14 @@ class MyTrees extends React.Component {
     for (let i = 0; i < ids.length; i++) {
       let details = await this.props.getTreeDetails(ids[i]);
       if (details[1] === "0x0000000000000000000000000000000000000000") continue;
-      details = details.map(element => {
-        if (typeof element === "object") return parseFloat(element);
-        else return element;
-      });
+      // details = details.map(element => {
+      //   if (typeof element === "object") return parseFloat(element);
+      //   else return element;
+      // });
+
+      for (let j = 0; j < 8; j++) {
+        if (typeof details[j] === "object") details[j] = parseFloat(details[j]);
+      }
       allTrees.push(details);
     }
     const allTreesIds = allTrees.map(tree => tree[0]);
@@ -438,7 +454,7 @@ class Market extends React.Component {
     myTrees = myTrees.map(element => parseFloat(element));
     let treesToShow = treesOnSale.slice(0); // Create a copy
 
-    // Remove your trees
+    // Remove your trees that are not on sale
     for (let i = 0; i < myTrees.length; i++) {
       for (let a = 0; a < treesOnSale.length; a++) {
         if (myTrees[i] === treesOnSale[a]) {
@@ -460,26 +476,33 @@ class Market extends React.Component {
         // Remove the 0x trees
         if (details[1] === "0x0000000000000000000000000000000000000000")
           continue;
-        details = details.map(element => {
-          if (typeof element === "object") return parseFloat(element);
-          else return element;
-        });
+        // details = details.map(element => {
+        //   if (typeof element === "object") return parseFloat(element);
+        //   else return element;
+        // });
+        for (let j = 0; j < 8; j++) {
+          if (typeof details[j] === "object") details[j] = parseFloat(details[j]);
+        }
         allTrees.push(details);
       }
+
       // Note the ( bracket instead of curly bracket {
-      allTrees = allTrees.map(detail => (
-        <TreeMarketBox
-          id={detail[0]}
-          owner={detail[1]}
-          daysPassed={Math.floor(
-            (Math.floor(Date.now() / 1000) - detail[5]) / 86400
-          )} // How many days passed after the creation of this tree
-          airProduction={detail[2]}
-          buyTree={(id, price) => this.props.buyTree(id, price)}
-          price={web3.fromWei(detail[3], "ether")}
-          key={detail[0]}
-        />
-      ));
+      allTrees = allTrees
+        //Remove your trees on sale
+        .filter(detail => detail[1] !== this.props.currentAccount)
+        .map(detail => (
+          <TreeMarketBox
+            id={detail[0]}
+            owner={detail[1]}
+            daysPassed={Math.floor(
+              (Math.floor(Date.now() / 1000) - detail[5]) / 86400
+            )} // How many days passed after the creation of this tree
+            airProduction={detail[2]}
+            buyTree={(id, price) => this.props.buyTree(id, price)}
+            price={web3.utils.fromWei(String(detail[3]), "ether")}
+            key={detail[0]}
+          />
+        ));
       this.setState({ allTrees, treesLoaded: true });
     }
   }

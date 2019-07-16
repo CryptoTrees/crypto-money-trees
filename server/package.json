@@ -45,6 +45,6 @@
     "firebase": "^6.2.4",
     "react-firebaseui": "^3.1.2",
     "truffle": "^5.0.26",
-    "web3": "^0.20.4"
+    "web3": "^1.0.0-beta.55"
   }
 }
