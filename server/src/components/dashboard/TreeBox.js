@@ -36,7 +36,7 @@ export default class TreeBox extends Component {
       <div className="col-6 col-sm-4 tree-container">
         <img src={this.state.image} className="tree-image" />
         <a
-          href={`https://ropsten.etherscan.io/token/${treesTokenAddress}?a=${
+          href={`https://ropsten.etherscan.io/token/${this.props.treesTokenAddress}?a=${
             this.props.id
             }`}
           target="_blank"

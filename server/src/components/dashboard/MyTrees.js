@@ -81,6 +81,7 @@ export default class MyTrees extends Component {
                 cancelSell={id => this.props.cancelSell(id)}
                 pickReward={id => this.props.pickReward(id)}
                 reward={this.state.allRewards[index]}
+                treesTokenAddress={this.props.treesTokenAddress}
             />
         ));
         this.setState({ allTrees });

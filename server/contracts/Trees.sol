@@ -56,7 +56,8 @@ contract Trees is Admin {
     uint salePrice;
     bool onSale;
     uint lastAirClaim; // Time when last air tokens were claimed
-    uint purchaseDate;
+    uint purchaseDate; // when it was purchased, either a new tree or a tree sold by another user
+    uint startDate;   // when new tree was purchased (AIR prod starts to increase)
     uint timesExchanged;
   }
 
@@ -124,7 +125,7 @@ contract Trees is Admin {
         //Only for development phase, set lastAirClaim from 1-20 days ago randomly
         uint256 lastAirClaim = uint256(keccak256(abi.encodePacked(newTreeId, now))).mod(20).add(1);
         
-        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now.sub((lastAirClaim.mul(1 days))), 0, 0);
+        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now.sub((lastAirClaim.mul(1 days))), 0, 0, 0);
 
         // Mint new tree
         cryptoTrees.mint(address(this), newTreeId);
@@ -190,6 +191,7 @@ contract Trees is Admin {
     trees[_treeId].onSale = false;
     trees[_treeId].owner = msg.sender;
     trees[_treeId].purchaseDate = now;
+    if(trees[_treeId].timesExchanged == 0) trees[_treeId].startDate = now;
     trees[_treeId].timesExchanged = trees[_treeId].timesExchanged.add(1);
   }
 
@@ -297,12 +299,22 @@ contract Trees is Admin {
    * @param _treeIds array of tree ids
    */
   function getTreesAirProduction(uint256[] memory _treeIds) public view returns(uint256[] memory productions){
+    productions = new uint256[](_treeIds.length);
+    
     for(uint256 i = 0; i < _treeIds.length; i++) {
-      //Equal to days passed since purchase, as it increases 1 AIR per day
-      uint airProduction = now.sub(trees[_treeIds[i]].purchaseDate).div(1 days);
-      if (airProduction > 100) airProduction = 100;
-      productions[i] = airProduction;
+      // Only for purchased trees
+      if (trees[_treeIds[i]].startDate != 0) {
+        //Equal to days passed since purchase, as it increases 1 AIR per day
+        uint airProduction = now.sub(trees[_treeIds[i]].startDate).div(1 days);
+
+        if (airProduction > 100) airProduction = 100;
+        if (airProduction == 0) airProduction = defaultAirProduction;
+        
+        productions[i] = airProduction;
+      }
+      else productions[i] = defaultAirProduction;
     }
+    return productions;
   }
 
   // To get all the tree IDs of one user

@@ -198,5 +198,10 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
       expect(treesOnSale.toString()).to.include("3");
       expect(treesOnSale.toString()).to.include("5");
     });
+
+    it("can get trees air production", async () => {
+      let prod = await this.trees.getTreesAirProduction([1, 2, 3, 4, 5])
+      prod[0].toString().should.be.equal('1')
+    });
   });
 });

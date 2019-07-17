@@ -1,6 +1,6 @@
 import React from "react"
 import { render } from "react-dom"
-import { BrowserRouter, Route, Link, Switch } from "react-router-dom"
+import { BrowserRouter, Route, Switch } from "react-router-dom"
 import Web3 from "web3"
 
 import { abi as contractAbi } from "./../build/contracts/Trees.json"
@@ -13,31 +13,29 @@ import MyTrees from './components/dashboard/MyTrees'
 import InitialPage from './components/InitialPage'
 import Login from './components/Login'
 
-// 1 day -> 0x59b42857df02690ea5796483444976dbc5512d9e ropsten
-// 1 second -> 0xa783ce9bcf718f8c6c22f7585c54c30c406588f7 ropsten
-// 1 day mainnet -> 0xFfFce2Dc587BadBD10B4Fe17F0F5F293458f6793
-// const contractAddress = '0xFfFce2Dc587BadBD10B4Fe17F0F5F293458f6793' // Mainnet
-
 // --- CONTRACTS ---
 const contractAddress = "0xe5957fbB650403FaE8400c7a4A74f592D909566e";
 const treesTokenAddress = "0x2E23413cabfAE218823ee17FcF110757aE7386b7";
 const airTokenAddress = "0xB327A0fa7974BC1A16912D40AC96eB26cd664E41";
-
+// -----------------
 
 class App extends React.Component {
   constructor() {
     super()
-    const isEthereumDefined = typeof ethereum != 'undefined'
+    const isWeb3Defined = typeof web3 != 'undefined'
     this.state = {
-      isEthereumDefined
+      isWeb3Defined,
+      currentAccount: ''
     }
-    if (isEthereumDefined) this.setup()
+
+    this.setup()
   }
 
   async setup() {
     if (!window.currentAccount) {
       if (window.ethereum) {
         window.web3 = new Web3(ethereum);
+        web3.eth.transactionConfirmationBlocks = 1; //Hard code number of blocks needed
         try {
           await ethereum.enable()
           ethereum.on('accountsChanged', function () {
@@ -50,7 +48,7 @@ class App extends React.Component {
         }
       }
       else if (window.web3) {
-        window.web3 = new Web3(web3.currentProvider);
+        window.web3 = new Web3(web3.currentProvider)
         let accounts = await web3.eth.getAccounts()
         window.currentAccount = accounts[0]
       }
@@ -65,10 +63,7 @@ class App extends React.Component {
       window.contract = new web3.eth.Contract(contractAbi, contractAddress)
       window.treeContract = new web3.eth.Contract(treeTokenAbi, treesTokenAddress)
       window.airContract = new web3.eth.Contract(airTokenAbi, airTokenAddress)
-
     }
-
-
   }
 
   async generateTree(amount) {
@@ -102,13 +97,16 @@ class App extends React.Component {
 
   async buyTree(id, price) {
     //Approve AIR tokens
-    await airContract.methods.approve(contractAddress, web3.utils.toWei(price)).send({
+    let result = await airContract.methods.approve(contractAddress, web3.utils.toWei(price)).send({
       from: currentAccount
     })
-    //Send buy call
-    result = await contract.methods.buyTree(id).send({
-      from: currentAccount
-    });
+    //Send buy call if approve was successful
+    if (result.status === true) {
+      result = await contract.methods.buyTree(id).send({
+        from: currentAccount
+      });
+    }
+    console.log(result);
     return result;
 
   }
@@ -141,11 +139,11 @@ class App extends React.Component {
 
   async checkAirProductions(ids) {
     //TODO: check function on smart contract
-    //const result = await contract.methods.getTreesAirProduction(ids).call()
+    let result = await contract.methods.getTreesAirProduction(ids).call()
     //console.log('air productions', result);
-    let airProd = Array.from({ length: ids.length }, () => Math.floor(Math.random() * 100))
-    airProd[ids.length - 1] = 100
-    return airProd
+    // let airProd = Array.from({ length: ids.length }, () => Math.floor(Math.random() * 100))
+    // airProd[ids.length - 1] = 100
+    return result;
   }
 
   redirectTo(history, location) {
@@ -158,14 +156,14 @@ class App extends React.Component {
         <Switch>
           <Route path="/" exact render={() => (
             <InitialPage
-              isEthereumDefined={this.state.isEthereumDefined}
+              isWeb3Defined={this.state.isWeb3Defined}
             />
           )} />
           <Route
             path="/my-trees"
             render={context => (
               <MyTrees
-                isEthereumDefined={this.state.isEthereumDefined}
+                isWeb3Defined={this.state.isWeb3Defined}
                 history={context.history}
                 redirectTo={(history, location) =>
                   this.redirectTo(history, location)
@@ -177,6 +175,9 @@ class App extends React.Component {
                 cancelSell={id => this.cancelTreeSell(id)}
                 pickReward={id => this.pickReward(id)}
                 checkRewards={ids => this.checkRewards(ids)}
+                contractAddress={contractAddress}
+                treesTokenAddress={treesTokenAddress}
+                airTokenAddress={airTokenAddress}
               />
             )}
           />
@@ -184,7 +185,7 @@ class App extends React.Component {
             path="/market"
             render={context => (
               <Market
-                isEthereumDefined={this.state.isEthereumDefined}
+                isWeb3Defined={this.state.isWeb3Defined}
                 history={context.history}
                 redirectTo={(history, location) =>
                   this.redirectTo(history, location)
@@ -195,6 +196,9 @@ class App extends React.Component {
                 getTreeDetails={id => this.getTreeDetails(id)}
                 buyTree={(id, price) => this.buyTree(id, price)}
                 checkAirProductions={(ids) => this.checkAirProductions(ids)}
+                contractAddress={contractAddress}
+                treesTokenAddress={treesTokenAddress}
+                airTokenAddress={airTokenAddress}
               />
             )}
           />
