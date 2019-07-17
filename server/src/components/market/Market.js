@@ -6,18 +6,25 @@ import TreeMarketBox from './TreeMarketBox'
 export default class Market extends Component {
 	constructor(props) {
 		super(props);
-		this.init();
 		this.state = {
 			allTrees: [],
 			treesLoaded: false
 		};
 
-		// if (!this.props.isEthereumDefined) this.props.redirectTo(this.props.history, "/login")
+		//if (!this.props.isEthereumDefined) this.props.redirectTo(this.props.history, "/login")
+	}
+
+	componentDidMount() {
+		if (this.props.isWeb3Defined && !this.state.treesLoaded) this.init();
+	}
+
+	componentDidUpdate() {
+		if (this.props.isWeb3Defined && !this.state.treesLoaded) this.init();
 	}
 
 	async init() {
-		await this.props.setup();
-		if (!window.currentAccount) this.props.redirectTo(this.props.history, "/login")
+		// await this.props.setup();
+		// if (!this.props.currentAccount) this.props.redirectTo(this.props.history, "/login")
 		// Get all the trees on sale except yours
 		let treesOnSale = await this.props.getTreesOnSale();
 		let myTrees = await this.props.getTreeIds();
@@ -38,7 +45,6 @@ export default class Market extends Component {
 		if (treesToShow.length > 0) {
 			let allTrees = [];
 			let airProductions = await this.props.checkAirProductions(treesToShow)
-			//console.log(airProductions)
 
 			for (let i = 0; i < treesToShow.length; i++) {
 				let details = await this.props.getTreeDetails(treesToShow[i]);
@@ -47,10 +53,6 @@ export default class Market extends Component {
 				// Remove the 0x trees
 				if (details[1] === "0x0000000000000000000000000000000000000000")
 					continue;
-				// details = details.map(element => {
-				//   if (typeof element === "object") return parseFloat(element);
-				//   else return element;
-				// });
 				for (let j = 0; j < 8; j++) {
 					if (typeof details[j] === "object") details[j] = parseFloat(details[j]);
 				}
@@ -102,7 +104,7 @@ export default class Market extends Component {
 
 		return (
 			<div>
-				<NavBar inMarket="true" />
+				<NavBar inMarket="true" currentAccount={this.props.currentAccount} />
 				{this.state.treesLoaded && this.state.allTrees.length === 0
 					? noTrees
 					: main}

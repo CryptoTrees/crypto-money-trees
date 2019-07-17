@@ -30,21 +30,21 @@ export default class NavBar extends Component {
                 <div className="collapse navbar-collapse" id="navbarText">
                     <ul className="navbar-nav ml-auto">
                         <li
-                            className="nav-item"
+                            className="nav-item mr-2"
                         >
                             <a
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                href={`https://ropsten.etherscan.io/address/${""}`} className="nav-link"
+                                href={`https://ropsten.etherscan.io/address/${this.props.currentAccount}`} className="nav-link"
                             >
-                                {""}
+                                Connected to: {this.props.currentAccount}
                             </a>
                         </li>
                         <li
-                            className={this.props.inMyTrees ? "nav-item active" : "nav-item"}
+                            className={this.props.inDashboard ? "nav-item active" : "nav-item"}
                         >
-                            <Link to="/my-trees" className="nav-link">
-                                My Trees
+                            <Link to="/dashboard" className="nav-link">
+                                Dashboard
                             </Link>
                         </li>
                         <li

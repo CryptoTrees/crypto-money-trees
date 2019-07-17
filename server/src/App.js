@@ -9,7 +9,7 @@ import { abi as airTokenAbi } from "./../build/contracts/AirTokens.json"
 import "./index.styl"
 
 import Market from './components/market/Market'
-import MyTrees from './components/dashboard/MyTrees'
+import MyTrees from './components/dashboard/Dashboard'
 import InitialPage from './components/InitialPage'
 import Login from './components/Login'
 
@@ -22,9 +22,8 @@ const airTokenAddress = "0xB327A0fa7974BC1A16912D40AC96eB26cd664E41";
 class App extends React.Component {
   constructor() {
     super()
-    const isWeb3Defined = typeof web3 != 'undefined'
     this.state = {
-      isWeb3Defined,
+      isWeb3Defined: false,
       currentAccount: ''
     }
 
@@ -32,7 +31,10 @@ class App extends React.Component {
   }
 
   async setup() {
-    if (!window.currentAccount) {
+    let account;
+    if (!this.state.currentAccount) {
+
+      // Modern dapp browsers...
       if (window.ethereum) {
         window.web3 = new Web3(ethereum);
         web3.eth.transactionConfirmationBlocks = 1; //Hard code number of blocks needed
@@ -40,35 +42,42 @@ class App extends React.Component {
           await ethereum.enable()
           ethereum.on('accountsChanged', function () {
             console.log('Account Changed!');
-            // Do something...          
           })
-          window.currentAccount = ethereum.selectedAddress
+          account = ethereum.selectedAddress
         } catch (error) {
           console.error("You must approve this dApp to interact with it")
         }
       }
+
+      // Legacy dapp browsers...
       else if (window.web3) {
         window.web3 = new Web3(web3.currentProvider)
         let accounts = await web3.eth.getAccounts()
-        window.currentAccount = accounts[0]
+        account = accounts[0]
       }
+
+      // Non-dapp browsers...
       else {
         // Get all the trees on sale except yours)
         console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
         window.web3 = new Web3('https://ropsten.infura.io/v3/6a622f155ca346e1b3521e8160c71b65');
-        // let newAccount = await web3.eth.accounts.create();
-        // window.currentAccount = newAccount.address
+        let newAccount = await web3.eth.accounts.create();
+        //TODO: Save in DB
+        account = newAccount.address
       }
 
       window.contract = new web3.eth.Contract(contractAbi, contractAddress)
       window.treeContract = new web3.eth.Contract(treeTokenAbi, treesTokenAddress)
       window.airContract = new web3.eth.Contract(airTokenAbi, airTokenAddress)
+
+      this.setState({ currentAccount: account, isWeb3Defined: true })
+
     }
   }
 
   async generateTree(amount) {
     let result = await contract.methods.generateTrees(amount).send({
-      from: currentAccount
+      from: this.state.currentAccount
     });
     return result;
   }
@@ -79,18 +88,18 @@ class App extends React.Component {
   }
 
   async getTreeIds() {
-    let result = await contract.methods.getOwnerTrees(currentAccount).call()
+    let result = await contract.methods.getOwnerTrees(this.state.currentAccount).call()
     return result;
   }
 
   async putTreeOnSale(id, price) {
     //Approve Tree token
     let result = await treeContract.methods.approve(contractAddress, id).send({
-      from: currentAccount
+      from: this.state.currentAccount
     })
     //Send sell call
     result = await contract.methods.putTreeOnSale(id, web3.utils.toWei(price)).send({
-      from: currentAccount
+      from: this.state.currentAccount
     });
     return result;
   }
@@ -98,12 +107,12 @@ class App extends React.Component {
   async buyTree(id, price) {
     //Approve AIR tokens
     let result = await airContract.methods.approve(contractAddress, web3.utils.toWei(price)).send({
-      from: currentAccount
+      from: this.state.currentAccount
     })
     //Send buy call if approve was successful
     if (result.status === true) {
       result = await contract.methods.buyTree(id).send({
-        from: currentAccount
+        from: this.state.currentAccount
       });
     }
     console.log(result);
@@ -118,32 +127,33 @@ class App extends React.Component {
 
   async cancelTreeSell(id) {
     let result = await contract.methods.cancelTreeSell(id).send({
-      from: currentAccount
+      from: this.state.currentAccount
     });
     return result;
   }
 
   async pickReward(id) {
     let result = await contract.methods.pickReward(id).send({
-      from: currentAccount
+      from: this.state.currentAccount
     });
     return result;
   }
 
   async checkRewards(ids) {
-    let result = await contract.methods.checkRewards(ids).call({
-      from: currentAccount
-    });
+    let result = await contract.methods.checkRewards(ids).call();
     return result;
   }
 
   async checkAirProductions(ids) {
     //TODO: check function on smart contract
-    let result = await contract.methods.getTreesAirProduction(ids).call()
+
     //console.log('air productions', result);
-    // let airProd = Array.from({ length: ids.length }, () => Math.floor(Math.random() * 100))
-    // airProd[ids.length - 1] = 100
-    return result;
+    let airProd = Array.from({ length: ids.length }, () => Math.floor(Math.random() * 100))
+    return airProd;
+
+    // let result = await contract.methods.getTreesAirProduction(ids).call()
+    // return result;
+
   }
 
   redirectTo(history, location) {
@@ -160,7 +170,7 @@ class App extends React.Component {
             />
           )} />
           <Route
-            path="/my-trees"
+            path="/dashboard"
             render={context => (
               <MyTrees
                 isWeb3Defined={this.state.isWeb3Defined}
@@ -168,16 +178,13 @@ class App extends React.Component {
                 redirectTo={(history, location) =>
                   this.redirectTo(history, location)
                 }
-                setup={() => this.setup()}
                 getTreeIds={() => this.getTreeIds()}
                 getTreeDetails={id => this.getTreeDetails(id)}
                 sellTree={(id, price) => this.putTreeOnSale(id, price)}
                 cancelSell={id => this.cancelTreeSell(id)}
                 pickReward={id => this.pickReward(id)}
                 checkRewards={ids => this.checkRewards(ids)}
-                contractAddress={contractAddress}
-                treesTokenAddress={treesTokenAddress}
-                airTokenAddress={airTokenAddress}
+                currentAccount={this.state.currentAccount}
               />
             )}
           />
@@ -190,15 +197,12 @@ class App extends React.Component {
                 redirectTo={(history, location) =>
                   this.redirectTo(history, location)
                 }
-                setup={() => this.setup()}
                 getTreesOnSale={() => this.getTreesOnSale()}
                 getTreeIds={() => this.getTreeIds()}
                 getTreeDetails={id => this.getTreeDetails(id)}
                 buyTree={(id, price) => this.buyTree(id, price)}
                 checkAirProductions={(ids) => this.checkAirProductions(ids)}
-                contractAddress={contractAddress}
-                treesTokenAddress={treesTokenAddress}
-                airTokenAddress={airTokenAddress}
+                currentAccount={this.state.currentAccount}
               />
             )}
           />
