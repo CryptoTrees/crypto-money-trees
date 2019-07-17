@@ -18,7 +18,8 @@ module.exports = {
         );
       },
       network_id: 3,
-      gas: 6e6
+      gas: 6e6,
+      gasPrice: 30000000000 // 30 Gwei
     }
   },
   compilers: {

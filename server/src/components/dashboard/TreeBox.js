@@ -4,13 +4,6 @@ export default class TreeBox extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      showSellConfirmation1: false,
-      showSellConfirmation2: false,
-      showCancelSell: false,
-      rewardClicked: false,
-      rewardAvailableToday:
-        Math.floor(Date.now() / 1000) - 1517245959 > 60 * 60 * 24, // If a day has passed since the last reward picked or not
-      amountToSell: 1,
       image: this.getImageAirProduction(this.props.airProduction),
       showDetails: false
     };

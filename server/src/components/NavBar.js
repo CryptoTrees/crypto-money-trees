@@ -30,7 +30,7 @@ export default class NavBar extends Component {
                 <div className="collapse navbar-collapse" id="navbarText">
                     <ul className="navbar-nav ml-auto">
                         <li
-                            className="nav-item mr-2"
+                            className={this.props.currentAccount ? "nav-item mr-2" : "hidden"}
                         >
                             <a
                                 target="_blank"

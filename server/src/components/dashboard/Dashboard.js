@@ -21,7 +21,7 @@ export default class Dashboard extends Component {
         // if (!this.props.isEthereumDefined) this.props.redirectTo(this.props.history, "/login")
     }
 
-    ccomponentDidMount() {
+    componentDidMount() {
         if (this.props.isWeb3Defined && !this.state.treesLoaded) this.init();
     }
 
@@ -132,7 +132,6 @@ export default class Dashboard extends Component {
     render() {
         const information = (
             <div>
-                <NavBar inMyTrees="true" currentAccount={this.props.currentAccount} />
                 <div className="container">
                     <div className="row">
                         <Information message="You don't have any trees. Start by buying some on the Market and wait for the transaction to be processed by the miners" />

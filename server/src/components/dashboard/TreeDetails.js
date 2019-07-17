@@ -41,7 +41,7 @@ export default class TreeDetails extends Component {
     getPastEvents() {
         treeContract
             .getPastEvents("Transfer", {
-                fromBlock: 5995750,
+                fromBlock: 6007354, //block of contract creation
                 toBlock: "latest"
             })
             .then(events => {
@@ -53,8 +53,16 @@ export default class TreeDetails extends Component {
     render() {
         return (
             <div>
-                <div className="col-6 col-lg-4 tree-container">
+                <div className="col-6 col-sm-4 tree-container">
                     <img src={this.state.image} className="tree-image" />
+                    <a
+                        href={`https://ropsten.etherscan.io/token/${window.treeContract.address}?a=${
+                            this.props.id
+                            }`}
+                        target="_blank"
+                    >
+                        <h4>Tree Id: {this.props.id}</h4>
+                    </a>
                     <p>
                         <span className="color-blue">{this.props.daysPassed}</span> days
                         passed after creation
@@ -69,9 +77,12 @@ export default class TreeDetails extends Component {
                     </p>
                     <p>
                         Picked Last Reward {" "}
-                        <span className="color-green">{String(new Date(this.props.lastRewardPickedDate))}</span>
+                        <span className="color-green">{this.props.lastRewardPickedDate === 0 ? "Never" : String(new Date(this.props.lastRewardPickedDate * 1000))}</span>
                     </p>
-
+                    <p>
+                        You have helped the environment by cleaning{" "}
+                        <span className="color-blue">{this.props.rewards} tons of CO2</span>
+                    </p>
                     <button
                         className="full-button"
                         disabled={
@@ -193,25 +204,37 @@ export default class TreeDetails extends Component {
                     </div>
                 </div>
                 <br></br>
-                <h2 className="text-center">Transfer History</h2>
+                <h2 className="text-center">Owner History</h2>
                 <table className="table table-striped table-light text-center" style={{ overflowX: 'auto', fontSize: '11px' }}>
                     <thead>
                         <tr>
                             <th scope="col">#</th>
-                            <th scope="col">From</th>
-                            <th scope="col">To</th>
-                            <th scope="col">TxId</th>
+                            <th scope="col">Previous</th>
+                            <th scope="col">New</th>
+                            <th scope="col">Transaction</th>
                         </tr>
                     </thead>
                     <tbody>
                         {this.state.transferHistory.map((e, k) => {
                             return (
                                 <tr key={k}>
-                                    <td>{k}</td>
-                                    <td>{e.returnValues.from}</td>
-                                    <td>{e.returnValues.to}
+                                    <td>{k + 1}</td>
+                                    <td>{e.returnValues.from === "0x0000000000000000000000000000000000000000"
+                                        ? "Creator" : e.returnValues.from}</td>
+                                    <td>{e.returnValues.to == web3.utils.toChecksumAddress(this.props.currentAccount)
+                                        ? "You" : e.returnValues.to}
                                     </td>
-                                    <td>{e.transactionHash}</td>
+                                    <td>
+                                        <a
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            href={`https://ropsten.etherscan.io/tx/${
+                                                e.transactionHash
+                                                }`}
+                                        >
+                                            {e.transactionHash}
+                                        </a>
+                                    </td>
                                 </tr>
                             );
                         })}

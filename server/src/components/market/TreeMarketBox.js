@@ -1,8 +1,5 @@
 import React, { Component } from 'react'
 
-const treesTokenAddress = "0x2E23413cabfAE218823ee17FcF110757aE7386b7";
-const contractAddress = "0xe5957fbB650403FaE8400c7a4A74f592D909566e";
-
 export default class TreeMarketBox extends Component {
     constructor(props) {
         super(props);
@@ -34,7 +31,7 @@ export default class TreeMarketBox extends Component {
             <div className="col-6 col-sm-4 tree-container">
                 <img src={this.state.image} className="tree-image" />
                 <a
-                    href={`https://ropsten.etherscan.io/token/${treesTokenAddress}?a=${
+                    href={`https://ropsten.etherscan.io/token/${treeContract.address}?a=${
                         this.props.id
                         }`}
                     target="_blank"
@@ -44,7 +41,7 @@ export default class TreeMarketBox extends Component {
                 <p className="word-wrap">
                     Owner{" "}
                     <span className="color-yellow">
-                        {this.props.owner === contractAddress
+                        {this.props.owner === contract.address
                             ? "The creator"
                             : this.props.owner}
                     </span>

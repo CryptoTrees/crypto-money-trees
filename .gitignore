@@ -62,6 +62,7 @@ build/
 
 # webpack output
 public/build.js
+public/index.html
 
 # modules
 server/package-lock.json
