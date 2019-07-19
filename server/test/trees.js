@@ -11,7 +11,7 @@ const CryptoTrees = artifacts.require("CryptoTrees");
 const AirTokens = artifacts.require("AirTokens");
 
 const CONTRACT_AIR_ALLOWANCE = new BigNumber(
-  web3.utils.toWei("100000000", "ether")
+  web3.utils.toWei("100000000", "ether") //100 Million
 );
 
 contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
@@ -20,8 +20,7 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
     this.airTokens = await AirTokens.deployed();
     this.trees = await Trees.deployed();
 
-    await this.treeTokens.addMinter(this.trees.address);
-    await this.airTokens.approve(this.trees.address, CONTRACT_AIR_ALLOWANCE);
+    await this.airTokens.approve(this.trees.address, CONTRACT_AIR_ALLOWANCE, { from: owner });
   });
   describe("Trees::Access", () => {
     it("Only owner can call addAdmin", async () => {
@@ -73,16 +72,44 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
     });
   });
 
+  describe("Air::Buying", () => {
+    it("users can buy a AIR tokens from contract", async () => {
+      await this.trees.buyAirTokens({
+        from: user1,
+        value: web3.utils.toWei("5", "ether")
+      }).should.be.fulfilled
+
+      await this.trees.buyAirTokens({
+        from: user2,
+        value: web3.utils.toWei("2", "ether")
+      }).should.be.fulfilled
+
+      let balance = await this.airTokens.balanceOf(user1);
+      balance.toString().should.be.equal(web3.utils.toWei("50", "ether"))
+
+      balance = await this.airTokens.balanceOf(user2);
+      balance.toString().should.be.equal(web3.utils.toWei("20", "ether"))
+    });
+  });
+
   describe("Trees::Buying", () => {
-    it("owner cannot buy its own tree", async () => {
-      await this.trees.buyTree(1, { from: owner }).should.be.rejected;
+    it("user can buy a tree if approves enough AIR tokens", async () => {
+
+      await this.airTokens.approve(this.trees.address, web3.utils.toWei("1", "ether"), { from: user1 });
+      await this.trees.buyTree(1, {
+        from: user1
+      }).should.be.fulfilled;
     });
 
-    it("user can buy a tree if sends enough ether", async () => {
-      await this.trees.buyTree(1, {
-        from: user1,
-        value: web3.utils.toWei("100", "finney")
-      }).should.be.fulfilled;
+    it("user cannot buy a tree if does not approve enough AIR tokens", async () => {
+      await this.airTokens.approve(this.trees.address, web3.utils.toWei("0.5", "ether"), { from: user1 });
+      await this.trees.buyTree(2, {
+        from: user1
+      }).should.be.rejected;
+    });
+
+    it("owner cannot buy its own tree", async () => {
+      await this.trees.buyTree(1, { from: owner }).should.be.rejected;
     });
 
     it("bought tree is not on sale anymore", async () => {
@@ -90,12 +117,7 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
       tree.onSale.should.be.false;
     });
 
-    it("user cannot buy a tree if sends low ether", async () => {
-      await this.trees.buyTree(2, {
-        from: user2,
-        value: web3.utils.toWei("50", "finney")
-      }).should.be.rejected;
-    });
+
   });
 
   describe("Trees::Selling", () => {
@@ -105,6 +127,7 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
     });
 
     it("should be able to put tree on sale", async () => {
+
       //Approve contract to transfer tree
       await this.treeTokens.approve(this.trees.address, 1, { from: user1 })
         .should.be.fulfilled;
@@ -130,7 +153,6 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
   describe("Trees::Rewards", () => {
     it("users cannot claim rewards of a tree they don't own", async () => {
       await this.trees.pickReward(1, { from: random }).should.be.rejected;
-      let tree = await this.trees.trees(1);
     });
 
     it("correct rewards calculation", async () => {
@@ -143,25 +165,16 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
     });
 
     it("users can claim rewards of one tree successfully", async () => {
+      await this.airTokens.approve(this.trees.address, web3.utils.toWei("1", "ether"), { from: user2 });
       await this.trees.buyTree(4, {
-        from: user2,
-        value: web3.utils.toWei("100", "finney")
+        from: user2
       }).should.be.fulfilled;
-
-      let daysPassed = await this.trees.daysSinceLastClaim(4);
-      daysPassed = Number(daysPassed.toString());
-      let rewards = (daysPassed * (1 + daysPassed)) / 2;
 
       //Temporal function in contract simulates as time has passed
       await this.trees.pickReward(4, { from: user2 }).should.be.fulfilled;
-
-      let airBalance = await this.airTokens.balanceOf(user2);
-      airBalance
-        .toString()
-        .should.be.equal(String(web3.utils.toWei(String(rewards), "ether")));
     });
 
-    it("air production should update after claiming rewatds", async () => {
+    it("air production should update after claiming rewards", async () => {
       let tree = await this.trees.trees(4);
       tree.airProduction.toString().should.not.be.equal("1"); //default is 1
     });
@@ -169,9 +182,9 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
 
   describe("FrontEnd::Getters", () => {
     it("can get all trees by owner", async () => {
+      await this.airTokens.approve(this.trees.address, web3.utils.toWei("1", "ether"), { from: user2 });
       await this.trees.buyTree(2, {
-        from: user2,
-        value: web3.utils.toWei("100", "finney")
+        from: user2
       }).should.be.fulfilled;
       let treesOwned = await this.trees.getOwnerTrees(user2);
       //user 2 has bought treeId 2 and 4
@@ -184,6 +197,11 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
       //tree id 3 and 5 are on sale
       expect(treesOnSale.toString()).to.include("3");
       expect(treesOnSale.toString()).to.include("5");
+    });
+
+    it("can get trees air production", async () => {
+      let prod = await this.trees.getTreesAirProduction([1, 2, 3, 4, 5])
+      prod[0].toString().should.be.equal('1')
     });
   });
 });

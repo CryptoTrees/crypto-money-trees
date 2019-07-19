@@ -59,4 +59,12 @@ typings/
 
 # compiled contracts
 build/
-dist/build.js
+
+# webpack output
+public/build.js
+public/index.html
+
+# modules
+server/package-lock.json
+
+remix

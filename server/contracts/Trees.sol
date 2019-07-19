@@ -56,7 +56,8 @@ contract Trees is Admin {
     uint salePrice;
     bool onSale;
     uint lastAirClaim; // Time when last air tokens were claimed
-    uint purchaseDate;
+    uint purchaseDate; // when it was purchased, either a new tree or a tree sold by another user
+    uint startDate;   // when new tree was purchased (AIR prod starts to increase)
     uint timesExchanged;
   }
 
@@ -65,13 +66,11 @@ contract Trees is Admin {
 
   uint256[] public treesOnSale;
 
-  //Initil owner when trees are generated
-  address public defaultTreesOwner = msg.sender;
-
   uint256 public defaultAirProduction = 1; // 1 AIR token per day
-  uint256 public defaultSalePrice = 0.1 ether;
+  uint256 public defaultSalePrice = 1 ether; // 1 AIR
   uint256 public timeBetweenRewards = 1 days;
   uint256 public totalAirProduction;
+  uint256 public airExchangeRate = 10; // 1 AIR = 0.1 ether, or 10 AIR/ETH
 
   CryptoTrees public cryptoTrees;
   AirTokens public airTokens;
@@ -82,9 +81,37 @@ contract Trees is Admin {
     airTokens = AirTokens(airAddress);
   }
 
+  /**
+   * @notice Updates tokens contract addresses
+   */
   function updateTokenContract(address newTreesAddress, address newAirAddress) external onlyAdmin{
     cryptoTrees = CryptoTrees(newTreesAddress);
     airTokens = AirTokens(newAirAddress);
+  }
+
+  /**
+   * @notice Updates contract default values
+   */
+  function updateDefaultValues
+  (
+    uint _defaultAirProduction, uint _defaultSalePrice, 
+    uint _timeBetweenRewards, uint _airExchangeRate
+  ) 
+    external onlyAdmin
+  {
+    defaultAirProduction = _defaultAirProduction;
+    defaultSalePrice = _defaultSalePrice;
+    timeBetweenRewards = _timeBetweenRewards;
+    airExchangeRate = _airExchangeRate;
+  }
+
+  /**
+   * @notice Exchange ether for AIR tokens
+   * @dev 1 AIR = 0.1 ether  
+   */
+  function buyAirTokens() public payable{
+    // TODO: Checks?
+    airTokens.transferFrom(owner, msg.sender, msg.value.mul(airExchangeRate));
   }
 
   /**
@@ -98,30 +125,34 @@ contract Trees is Admin {
         //Only for development phase, set lastAirClaim from 1-20 days ago randomly
         uint256 lastAirClaim = uint256(keccak256(abi.encodePacked(newTreeId, now))).mod(20).add(1);
         
-        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now.sub((lastAirClaim.mul(1 days))), 0, 0);
+        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now.sub((lastAirClaim.mul(1 days))), 0, 0, 0);
 
         // Mint new tree
         cryptoTrees.mint(address(this), newTreeId);
 
         // Update the treeBalances and treeOwner mappings
         // We add the tree to the same array position to find it easier
-        // ownerTreesIds[defaultTreesOwner].push(newTreeId);
         trees[newTreeId] = newTree;
         treesOnSale.push(newTreeId);
         totalAirProduction += defaultAirProduction;
     }
   }
 
-  // This is payable, the user will send the payment here
-  // We delete the tree from the owner first and we add that to the receiver
-  // When you sell you're actually putting the tree on the market, not losing it yet
+  /**
+   * @notice User that wants to puts tree on sale
+   * @dev tree is transferred to the contract first, calling approve with tokenID
+   * @param _treeNumber tree Id
+   * @param _salePrice sale price in AIR tokens, including decimals
+   */
   function putTreeOnSale(uint256 _treeNumber, uint256 _salePrice) public {
     require(msg.sender == trees[_treeNumber].owner, 'You are not the owner of this tree');
     require(!trees[_treeNumber].onSale, 'Tree is already on sale');
-    require(_salePrice > 0, 'Sale price has too be greater than 0');
+    require(_salePrice > 0, 'Sale price has to be greater than 0');
 
     // User needs to approve this contract to transfer the tree to us
-    require(cryptoTrees.getApproved(_treeNumber) == address(this), "You need to approve this contract first");    
+    require(cryptoTrees.getApproved(_treeNumber) == address(this), "You need to approve this contract first");
+
+    // Transfer Tree from user    
     cryptoTrees.transferFrom(msg.sender, address(this), _treeNumber);
 
     treesOnSale.push(_treeNumber);
@@ -129,20 +160,24 @@ contract Trees is Admin {
     trees[_treeNumber].onSale = true;
   }
 
-  // To buy a tree paying ether
-  function buyTree(uint256 _treeId) public payable {
+  /**
+   * @notice Buy a tree with AIR tokens
+   * @dev user must approve the air contract first
+   * @dev if its a new tree, transfer tokens to us
+   * @param _treeId tree Id
+   */
+  function buyTree(uint256 _treeId) public{
     require(msg.sender != trees[_treeId].owner, 'You already own this tree');
     require(trees[_treeId].onSale, 'Tree is not on sale');
-    require(msg.value >= trees[_treeId].salePrice, 'Sale price is higher than the amount sent');
-    address payable newOwner = msg.sender;
+    require(airTokens.allowance(msg.sender, address(this)) >= trees[_treeId].salePrice, 'Sale price is higher than the amount allowed to spend');
+    
+    // If its a new tree, send payment to owner of contract
+    if(trees[_treeId].timesExchanged == 0) airTokens.transferFrom(msg.sender, owner, trees[_treeId].salePrice);
+    // Else, send payment to previous owner
+    else airTokens.transferFrom(msg.sender, trees[_treeId].owner, trees[_treeId].salePrice);
 
     // Transfer ownership of the tree to new owner
-    cryptoTrees.transferFrom(address(this), newOwner, _treeId);
-
-    // If its a new tree, send payment to owner
-    if(trees[_treeId].timesExchanged == 0) owner.transfer(msg.value);
-    // Send payment to previous owner
-    else trees[_treeId].owner.transfer(msg.value);
+    cryptoTrees.transferFrom(address(this), msg.sender, _treeId);
 
     // Remove the tree from the array of trees on sale
     for(uint256 a = 0; a < treesOnSale.length; a++) {
@@ -154,12 +189,18 @@ contract Trees is Admin {
     
     //Update tree details
     trees[_treeId].onSale = false;
-    trees[_treeId].owner = newOwner;
+    trees[_treeId].owner = msg.sender;
     trees[_treeId].purchaseDate = now;
+    if(trees[_treeId].timesExchanged == 0) trees[_treeId].startDate = now;
     trees[_treeId].timesExchanged = trees[_treeId].timesExchanged.add(1);
   }
 
-  // To take a tree out of the market without selling it
+
+  /**
+   * @notice To take a tree out of the market without selling it
+   * @dev transfer tree from contract to owner
+   * @param _treeId tree Id
+   */
   function cancelTreeSell(uint256 _treeId) public {
     require(msg.sender == trees[_treeId].owner);
     require(trees[_treeId].onSale);
@@ -174,11 +215,16 @@ contract Trees is Admin {
     trees[_treeId].onSale = false;
   }
 
-  // To get the AIR tokens from the rewards
+  /**
+   * @notice To get the AIR tokens from the rewards
+   * @dev only for one specific tree
+   * @param _treeId tree Id
+   */
   function pickReward(uint256 _treeId) public {
     require(msg.sender == trees[_treeId].owner, "You are not the owner of this tree");
     require(now.sub(trees[_treeId].lastAirClaim) > timeBetweenRewards, "You cannot claim rewards yet");
 
+    //Send as array, as that function is used for a batch of tree ids
     uint256[] memory formatedId = new uint256[](1);
     formatedId[0] = _treeId;
     uint256[] memory rewards = checkRewards(formatedId);
@@ -192,6 +238,11 @@ contract Trees is Admin {
     emit LogRewardPicked(_treeId, msg.sender, now, rewards[0]);
   }
 
+  /**
+   * @notice Update a tree's production
+   * @dev called by pickReward
+   * @param _treeId tree Id
+   */
   function updateAirProduction(uint256 _treeId) internal returns(bool) {
     uint256 prevProd = trees[_treeId].airProduction;
     uint daysPassed = daysSinceLastClaim(_treeId);
@@ -202,12 +253,19 @@ contract Trees is Admin {
     return true;
   }
 
+   /**
+   * @notice how many days since the last AIR claim
+   * @param _treeId tree Id
+   */
   function daysSinceLastClaim(uint256 _treeId) public view returns(uint) {
     uint256 lastClaim = trees[_treeId].lastAirClaim;
     return (now.sub(lastClaim).div(1 days));
   }
 
-  // Returns an array of how much AIR the tree Ids ahve generated until today
+  /**
+   * @notice Returns an array of how much AIR the tree Ids ahve generated until today
+   * @param _treeIds array of tree ids
+   */
   function checkRewards(uint256[] memory _treeIds) public view returns(uint256[] memory results) {
     results = new uint256[](_treeIds.length);
 
@@ -236,6 +294,29 @@ contract Trees is Admin {
 
   }
 
+  /**
+   * @notice Return calculated air production, but does not update it here
+   * @param _treeIds array of tree ids
+   */
+  function getTreesAirProduction(uint256[] memory _treeIds) public view returns(uint256[] memory productions){
+    productions = new uint256[](_treeIds.length);
+    
+    for(uint256 i = 0; i < _treeIds.length; i++) {
+      // Only for purchased trees
+      if (trees[_treeIds[i]].startDate != 0) {
+        //Equal to days passed since purchase, as it increases 1 AIR per day
+        uint airProduction = now.sub(trees[_treeIds[i]].startDate).div(1 days);
+
+        if (airProduction > 100) airProduction = 100;
+        if (airProduction == 0) airProduction = defaultAirProduction;
+        
+        productions[i] = airProduction;
+      }
+      else productions[i] = defaultAirProduction;
+    }
+    return productions;
+  }
+
   // To get all the tree IDs of one user
   function getOwnerTrees(address _account) public view returns(uint256[] memory) {
     return cryptoTrees.getOwnerTrees(_account);
@@ -249,5 +330,10 @@ contract Trees is Admin {
   // To extract all tokens in an emergency
   function emergencyExtract() public onlyOwner {
     owner.transfer(address(this).balance);
+  }
+
+  //fallback
+  function() external payable{
+    revert();
   }
 }
