@@ -34,12 +34,16 @@ export default class TreeBox extends Component {
             }`}
           target="_blank"
         >
-          <h4>Id {this.props.id}</h4>
+          <h4>Tree Id: {this.props.id}</h4>
         </a>
 
         <p>
           Air Production{" "}
           <span className="color-green">{this.props.airProduction}</span>
+        </p>
+        <p>
+          Pending Rewards{" "}
+          <span className="color-yellow">{this.props.rewards}</span>
         </p>
         <button onClick={() => this.props.showDetails(this.props.id)}>
           More Info

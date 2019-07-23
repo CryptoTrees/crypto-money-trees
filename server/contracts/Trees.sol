@@ -44,6 +44,7 @@ contract Trees is Admin {
 
   // --- EVENTS ---
   event LogRewardPicked(uint256 indexed treeId, address indexed owner, uint256 date, uint256 amount);
+  event PutTreeOnSale(uint256 indexed treeId, address indexed owner, uint256 price);
 
   // A mapping with all the tree IDs of that owner
   // mapping(address => uint256[]) public ownerTreesIds;
@@ -158,6 +159,8 @@ contract Trees is Admin {
     treesOnSale.push(_treeNumber);
     trees[_treeNumber].salePrice = _salePrice;
     trees[_treeNumber].onSale = true;
+
+    emit PutTreeOnSale(_treeNumber, msg.sender, _salePrice);
   }
 
   /**

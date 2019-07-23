@@ -120,6 +120,7 @@ class App extends React.Component {
         from: this.state.currentAccount
       });
     }
+
     return result;
 
   }

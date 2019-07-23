@@ -10,13 +10,11 @@ export default class TreeDetails extends Component {
             showCancelSell: false,
             rewardClicked: false,
             rewardAvailableToday:
-                Math.floor(Date.now() / 1000) - 1517245959 > 60 * 60 * 24, // If a day has passed since the last reward picked or not
+                Math.floor(Date.now() / 1000) - this.props.lastRewardPickedDate > 60 * 60 * 24, // If a day has passed since the last reward picked or not
             amountToSell: 1,
             image: this.getImageAirProduction(this.props.airProduction),
             transferHistory: []
         };
-
-
     }
 
     getImageAirProduction(airProduction) {
@@ -48,11 +46,17 @@ export default class TreeDetails extends Component {
                 let transferHistory = events.filter(e => e.returnValues.tokenId.toString() === String(this.props.id))
                 this.setState({ transferHistory })
             });
-    }
+    }    
 
     render() {
         return (
             <div>
+                <button
+                    className="check-rewards-button"
+                    onClick={() => this.props.goBack()}
+                >
+                    Back
+                </button>
                 <div className="col-6 col-sm-4 tree-container">
                     <img src={this.state.image} className="tree-image" />
                     <a
@@ -73,11 +77,11 @@ export default class TreeDetails extends Component {
                     </p>
                     <p>
                         Sale Price{" "}
-                        <span className="color-yellow">{web3.utils.fromWei(String(this.props.salePrice))} AIR tokens</span>
+                        <span className="color-yellow">{web3.utils.fromWei(String(this.props.salePrice))} AIR </span>
                     </p>
                     <p>
                         Picked Last Reward {" "}
-                        <span className="color-green">{this.props.lastRewardPickedDate === 0 ? "Never" : String(new Date(this.props.lastRewardPickedDate * 1000))}</span>
+                        <span className="color-green">{this.props.lastRewardPickedDate === 0 ? "Never" : (new Date(this.props.lastRewardPickedDate * 1000)).toUTCString()}</span>
                     </p>
                     <p>
                         You have helped the environment by cleaning{" "}
@@ -86,7 +90,7 @@ export default class TreeDetails extends Component {
                     <button
                         className="full-button"
                         disabled={
-                            this.props.reward === 0 ||
+                            this.props.rewards === 0 ||
                             this.state.rewardClicked ||
                             !this.state.rewardAvailableToday
                         }
@@ -97,8 +101,8 @@ export default class TreeDetails extends Component {
                             } catch (e) { }
                         }}
                     >
-                        {this.props.reward > 0 && this.state.rewardAvailableToday
-                            ? `Pick ${this.props.reward} AIR Reward Tokens`
+                        {this.props.rewards > 0 && this.state.rewardAvailableToday
+                            ? `Pick ${this.props.rewards} AIR Reward Tokens`
                             : "Reward Available Tomorrow"}
                     </button>
 
