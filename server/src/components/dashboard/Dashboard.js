@@ -13,6 +13,8 @@ export default class Dashboard extends Component {
             allTrees: [],
             allTreesIds: [],
             allRewards: [],
+            allTreeDetails: [],
+            rewardClaimHistory: [],
             isCheckingRewards: false,
             treesLoaded: false,
             showingDetails: false,
@@ -23,66 +25,69 @@ export default class Dashboard extends Component {
 
     componentDidMount() {
         if (this.props.isWeb3Defined && !this.state.treesLoaded) this.init();
+
     }
 
     componentDidUpdate() {
         if (this.props.isWeb3Defined && !this.state.treesLoaded) this.init();
+
+
     }
 
+    //FETCH DATA
     async init() {
         let allTrees = [];
         let allRewards = [];
 
         //TODO: ADD TREES ON SALE OF USER
 
-        let ids = await this.props.getTreeIds();
-        ids = ids.map(element => parseFloat(element));
-        for (let i = 0; i < ids.length; i++) {
-            let details = await this.props.getTreeDetails(ids[i]);
+        // Get Trees of owner
+        let allTreesIds = await this.props.getTreeIds();
+        allTreesIds = allTreesIds.map(element => parseFloat(element));
+
+        allRewards = await this.props.checkRewards(allTreesIds);
+
+        for (let i = 0; i < allTreesIds.length; i++) {
+            let details = await this.props.getTreeDetails(allTreesIds[i]);
             if (details[1] === "0x0000000000000000000000000000000000000000") continue;
 
             for (let j = 0; j < 8; j++) {
                 if (typeof details[j] === "object") details[j] = parseFloat(details[j]);
             }
+            //let reward = await this.props.checkRewards([details[0]]);
+            details[8] = parseFloat(allRewards[i]);
+
             allTrees.push(details);
         }
-        const allTreesIds = allTrees.map(tree => tree[0]);
-        allRewards = await this.props.checkRewards(allTreesIds);
-        allRewards = allRewards.map(element => parseFloat(element));
-        // Note the ( bracket instead of curly bracket {
+        let allTreeDetails = allTrees;
+
+        //Note the ( bracket instead of curly bracket {
         allTrees = allTrees.map((detail, index) => (
             <TreeBox
                 id={detail[0]}
-                daysPassed={Math.floor(
-                    (Math.floor(Date.now() / 1000) - detail[5]) / 86400
-                )} // How many days passed after the creation of this tree
                 airProduction={detail[2]}
-                onSale={detail[4]}
-                sellTree={(id, price) => this.props.sellTree(id, price)}
-                key={detail[0]}
-                cancelSell={id => this.props.cancelSell(id)}
-                pickReward={id => this.props.pickReward(id)}
-                lastRewardPickedDate={detail[5]}
-                reward={allRewards[index]}
+                rewards={detail[8]}
                 showDetails={(id) => this.showDetails(id)}
             />
         ));
+
+        this.getPastClaims();
+
         this.setState({
             allTrees,
             allTreesIds,
+            allTreeDetails,
             allRewards,
             treesLoaded: true
         });
+
+
     }
 
-    async showDetails(id) {
-        let detail = await this.props.getTreeDetails(id);
-        for (let j = 0; j < 8; j++) {
-            if (typeof detail[j] === "object") detail[j] = parseFloat(detail[j]);
-        }
-        let reward = await this.props.checkRewards([id]);
-        detail[8] = parseFloat(reward[0]);
-        this.setState({ showingDetails: true, treeDetails: detail })
+    showDetails(id) {
+        let treeDetails = this.state.allTreeDetails;
+        treeDetails = treeDetails.filter(tree => tree[0] == id)[0]
+        this.setState({ showingDetails: true, treeDetails })
     }
 
     renderTreeDetails() {
@@ -106,8 +111,22 @@ export default class Dashboard extends Component {
                 cancelSell={id => this.props.cancelSell(id)}
                 pickReward={id => this.props.pickReward(id)}
                 currentAccount={this.props.currentAccount}
+                goBack={() => this.setState({ showingDetails: false })}
             />
         )
+    }
+
+    getPastClaims() {
+        contract
+            .getPastEvents("LogRewardPicked", {
+                filter: { owner: this.props.currentAccount },
+                fromBlock: 6007354, //block of contract creation
+                toBlock: "latest"
+            })
+            .then(events => {
+
+                this.setState({ rewardClaimHistory })
+            });
     }
 
     updateRewards() {
@@ -115,13 +134,7 @@ export default class Dashboard extends Component {
         allTrees = this.state.allTrees.map((detail, index) => (
             <TreeBox
                 id={detail[0]}
-                daysPassed={detail[2]}
                 airProduction={detail[3]}
-                onSale={detail[6]}
-                sellTree={(id, price) => this.props.sellTree(id, price)}
-                key={detail[0]}
-                cancelSell={id => this.props.cancelSell(id)}
-                pickReward={id => this.props.pickReward(id)}
                 reward={this.state.allRewards[index]}
                 showDetails={(id) => this.showDetails(id)}
             />
@@ -130,6 +143,7 @@ export default class Dashboard extends Component {
     }
 
     render() {
+        console.log(this.state.rewardClaimHistory);
         const information = (
             <div>
                 <div className="container">
@@ -182,7 +196,7 @@ export default class Dashboard extends Component {
                         <button
                             className="check-rewards-button"
                             onClick={() => {
-                                window.location = "/my-trees";
+                                window.location = "/dashboard";
                             }}
                         >
                             Reload
@@ -191,8 +205,13 @@ export default class Dashboard extends Component {
                     <div className="row">
                         {this.state.treesLoaded ? this.state.allTrees : loading}
                     </div>
+                    <p>
+                        Total Rewards{" "}
+                        <span className="color-green">{this.state.allRewards.reduce((a, b) => Number(a) + Number(b), 0)}</span>
+                    </p>
                 </div>
                 <div className="spacer" />
+
             </div>
         );
 

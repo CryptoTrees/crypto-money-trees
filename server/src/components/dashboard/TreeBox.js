@@ -9,19 +9,9 @@ export default class TreeBox extends Component {
     };
   }
 
-  getImageAirProduction(airProduction) {
-    if (airProduction < 10) {
-      return 'imgs/1.jpg'
-    } else if (airProduction < 25) {
-      return 'imgs/2.jpg'
-    } else if (airProduction < 50) {
-      return 'imgs/3.jpg'
-    } else if (airProduction < 100) {
-      return 'imgs/4.jpg'
-    } else {
-      return 'imgs/5.jpg'
-    }
-    // return "imgs/tree-big.jpg"; // TODO Change this to the evolving images
+  getImageAirProduction() {
+    const random = Math.floor(Math.random() * 6 + 1)
+    return `imgs/tree ${random}.svg`
   }
 
   render() {
@@ -34,12 +24,16 @@ export default class TreeBox extends Component {
             }`}
           target="_blank"
         >
-          <h4>Id {this.props.id}</h4>
+          <h4>Tree Id: {this.props.id}</h4>
         </a>
 
         <p>
           Air Production{" "}
           <span className="color-green">{this.props.airProduction}</span>
+        </p>
+        <p>
+          Pending Rewards{" "}
+          <span className="color-yellow">{this.props.rewards}</span>
         </p>
         <button onClick={() => this.props.showDetails(this.props.id)}>
           More Info
