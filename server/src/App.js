@@ -12,16 +12,22 @@ import Market from './components/market/Market'
 import MyTrees from './components/dashboard/Dashboard'
 import InitialPage from './components/InitialPage'
 import Login from './components/Login'
+import airToken from '../build/contracts/AirTokens.json'
+import cryptoTrees from '../build/contracts/CryptoTrees.json'
+import trees from '../build/contracts/Trees.json'
 
 //Temporal functions to use in console
 // contract.methods.generateTrees(10).send({from:'0x39e1CF2ef6F2730ae3E980949Cb62a38BB567933'})
-// contract.methods.cancelTreeSell(7).send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB'}) 
+// contract.methods.cancelTreeSell(7).send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB'})
 // contract.methods.buyAirTokens().send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB', value:'200000000000000000'}) //Buy 2 AIR tokens
 
 // --- CONTRACTS ---
-const contractAddress = "0xfFA870B048b89A9CF7565363Ca415a58873f07de";
-const treesTokenAddress = "0x22a3275de0d852564d662cd3edbcec2bf1ef734e";
-const airTokenAddress = "0xc06471aC986aEf00Bf69a371c73B2ca423a5312E";
+const contractAddress = trees.networks['3'].address
+const treesTokenAddress = cryptoTrees.networks['3'].address
+const airTokenAddress = airToken.networks['3'].address
+console.log('Trees address', contractAddress)
+console.log('CryptoTrees address', treesTokenAddress)
+console.log('Air address', airTokenAddress)
 // -----------------
 
 class App extends React.Component {
