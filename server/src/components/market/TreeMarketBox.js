@@ -9,7 +9,7 @@ export default class TreeMarketBox extends Component {
         };
     }
 
-    getImageAirProduction(airProduction) {
+    getImageAirProduction() {
         const random = Math.floor(Math.random() * 6 + 1)
         return `imgs/tree ${random}.svg`
     }

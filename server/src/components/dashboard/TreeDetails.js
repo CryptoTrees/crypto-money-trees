@@ -17,19 +17,9 @@ export default class TreeDetails extends Component {
         };
     }
 
-    getImageAirProduction(airProduction) {
-        if (airProduction < 10) {
-            return 'imgs/1.jpg'
-        } else if (airProduction < 25) {
-            return 'imgs/2.jpg'
-        } else if (airProduction < 50) {
-            return 'imgs/3.jpg'
-        } else if (airProduction < 100) {
-            return 'imgs/4.jpg'
-        } else {
-            return 'imgs/5.jpg'
-        }
-        // return "imgs/tree-big.jpg"; // TODO Change this to the evolving images
+    getImageAirProduction() {
+        const random = Math.floor(Math.random() * 6 + 1)
+        return `imgs/tree ${random}.svg`
     }
 
     componentDidMount() {
@@ -46,7 +36,7 @@ export default class TreeDetails extends Component {
                 let transferHistory = events.filter(e => e.returnValues.tokenId.toString() === String(this.props.id))
                 this.setState({ transferHistory })
             });
-    }    
+    }
 
     render() {
         return (
