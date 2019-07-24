@@ -43,8 +43,10 @@ contract Trees is Admin {
   using SafeMath for uint256;
 
   // --- EVENTS ---
-  event LogRewardPicked(uint256 indexed treeId, address indexed owner, uint256 date, uint256 amount);
-  event PutTreeOnSale(uint256 indexed treeId, address indexed owner, uint256 price);
+  event RewardPicked(uint256 indexed treeId, address indexed owner, uint256 date, uint256 amount);
+  event TreeOnSale(uint256 indexed treeId, address indexed owner, uint256 price);
+  event TreeSold(uint256 indexed treeId, address indexed newOwner, uint256 sellTotal);
+  event MultipleTreesSold(uint256 indexed treeType, address indexed owner, uint256 price, uint256 sellTotal);
 
   // A mapping with all the tree IDs of that owner
   // mapping(address => uint256[]) public ownerTreesIds;
@@ -60,6 +62,7 @@ contract Trees is Admin {
     uint purchaseDate; // when it was purchased, either a new tree or a tree sold by another user
     uint startDate;   // when new tree was purchased (AIR prod starts to increase)
     uint timesExchanged;
+    uint treeType;
   }
 
    // Get the tree information given the id
@@ -68,10 +71,12 @@ contract Trees is Admin {
   uint256[] public treesOnSale;
 
   uint256 public defaultAirProduction = 1; // 1 AIR token per day
-  uint256 public defaultSalePrice = 1 ether; // 1 AIR
+  uint256 public defaultSalePrice = 1 ether; // 1 AIR  
   uint256 public timeBetweenRewards = 1 days;
   uint256 public totalAirProduction;
   uint256 public airExchangeRate = 10; // 1 AIR = 0.1 ether, or 10 AIR/ETH
+
+  mapping(uint => uint) public priceByType;
 
   CryptoTrees public cryptoTrees;
   AirTokens public airTokens;
@@ -80,6 +85,10 @@ contract Trees is Admin {
   constructor (address treesAddress, address airAddress) public {
     cryptoTrees = CryptoTrees(treesAddress);
     airTokens = AirTokens(airAddress);
+    priceByType[0] = defaultAirProduction;
+    priceByType[1] = 2 ether;
+    priceByType[2] = 4 ether;
+    priceByType[3] = 6 ether;
   }
 
   /**
@@ -96,7 +105,9 @@ contract Trees is Admin {
   function updateDefaultValues
   (
     uint _defaultAirProduction, uint _defaultSalePrice, 
-    uint _timeBetweenRewards, uint _airExchangeRate
+    uint _timeBetweenRewards, uint _airExchangeRate,
+    uint _defaultPriceType1, uint _defaultPriceType2,
+    uint _defaultPriceType3
   ) 
     external onlyAdmin
   {
@@ -104,6 +115,9 @@ contract Trees is Admin {
     defaultSalePrice = _defaultSalePrice;
     timeBetweenRewards = _timeBetweenRewards;
     airExchangeRate = _airExchangeRate;
+    priceByType[0] = _defaultPriceType1;
+    priceByType[0] = _defaultPriceType2;
+    priceByType[0] = _defaultPriceType3;
   }
 
   /**
@@ -126,7 +140,7 @@ contract Trees is Admin {
         //Only for development phase, set lastAirClaim from 1-20 days ago randomly
         uint256 lastAirClaim = uint256(keccak256(abi.encodePacked(newTreeId, now))).mod(20).add(1);
         
-        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now.sub((lastAirClaim.mul(1 days))), 0, 0, 0);
+        Tree memory newTree = Tree(newTreeId, address(uint160(address(this))), defaultAirProduction, defaultSalePrice, true, now.sub((lastAirClaim.mul(1 days))), 0, 0, 0, 0);
 
         // Mint new tree
         cryptoTrees.mint(address(this), newTreeId);
@@ -196,6 +210,39 @@ contract Trees is Admin {
     trees[_treeId].purchaseDate = now;
     if(trees[_treeId].timesExchanged == 0) trees[_treeId].startDate = now;
     trees[_treeId].timesExchanged = trees[_treeId].timesExchanged.add(1);
+  }
+
+  /**
+   * @notice Buy multiple trees of a certain type
+   * @dev user must approve the air contract first
+   * @param treeType tree type to buy, can be 0-4
+   * @param amountTrees amount of trees to buy
+   */
+  function buyMultipleTrees(uint256 treeType, uint amountTrees) public{
+    
+    require(airTokens.transferFrom(msg.sender, owner, priceByType[treeType].mul(amountTrees)), 'Error transfering air tokens to contract');
+
+    for(uint256 i = 0; i < amountTrees; i++) {
+
+        uint256 newTreeId = cryptoTrees.totalSupply().add(1);     
+
+        //Only for development phase, set lastAirClaim from 1-20 days ago randomly
+        uint256 lastAirClaim = uint256(keccak256(abi.encodePacked(newTreeId, now))).mod(20).add(1);
+
+         // Mint new tree
+        cryptoTrees.mint(msg.sender, newTreeId);
+        
+        Tree memory newTree;
+
+        newTree.treeId = newTreeId;
+        newTree.owner = msg.sender;
+        newTree.airProduction = defaultAirProduction;
+
+        // Update the treeBalances and treeOwner mappings
+        // We add the tree to the same array position to find it easier
+        trees[newTreeId] = newTree;
+        totalAirProduction += defaultAirProduction;
+    }   
   }
 
 
