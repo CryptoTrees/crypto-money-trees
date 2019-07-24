@@ -40,45 +40,47 @@ export default class TreeDetails extends Component {
 
     render() {
         return (
-            <div>
-                <button
-                    className="check-rewards-button"
+            <div className="text-center">
+                <button                    
                     onClick={() => this.props.goBack()}
                 >
-                    Back
+                    Back to Dashboard
                 </button>
-                <div className="col-6 col-sm-4 tree-container">
-                    <img src={this.state.image} className="tree-image" />
+                <div  >
                     <a
                         href={`https://ropsten.etherscan.io/token/${window.treeContract.address}?a=${
                             this.props.id
                             }`}
                         target="_blank"
                     >
-                        <h4>Tree Id: {this.props.id}</h4>
+                        <h4>Tree {this.props.id}</h4>
                     </a>
-                    <p>
-                        <span className="color-blue">{this.props.daysPassed}</span> days
-                        passed after creation
-                </p>
-                    <p>
-                        On sale{" "}
-                        <span className="color-red">{this.props.onSale.toString()}</span>
+                    <img src={this.state.image} className="tree-image-details" />
+                    
+                    <p className="details-big" >
+                        You have helped the environment by cleaning 28 tons of CO2
                     </p>
-                    <p>
-                        Sale Price{" "}
-                        <span className="color-yellow">{web3.utils.fromWei(String(this.props.salePrice))} AIR </span>
+                    <p className="details-big">
+                        You have generated 957 kg of clean oxygen for the planet
                     </p>
-                    <p>
-                        Picked Last Reward {" "}
-                        <span className="color-green">{this.props.lastRewardPickedDate === 0 ? "Never" : (new Date(this.props.lastRewardPickedDate * 1000)).toUTCString()}</span>
+                    <p className="details-big">
+                        You provided clean air for 7.4 people in a year
                     </p>
-                    <p>
-                        You have helped the environment by cleaning{" "}
-                        <span className="color-blue">{this.props.rewards} tons of CO2</span>
+                    <p className="details-big">
+                        You have have earned a total of {this.props.rewards} AIR tokens
                     </p>
+                    <p className="details">
+                       Planted {this.props.daysPassed} day(s) ago
+                    </p>
+                    <p className="details">
+                        Last Reward Picked {this.props.lastRewardPickedDate === 0 ? "Never" : (new Date(this.props.lastRewardPickedDate * 1000)).toUTCString()}
+                    </p>
+                    <p className="details">                       
+                        {this.props.onSale ? "On Sale":"Not On Sale"}
+                    </p>                  
+                   
                     <button
-                        className="full-button"
+                        className="wide-button"
                         disabled={
                             this.props.rewards === 0 ||
                             this.state.rewardClicked ||
@@ -92,12 +94,12 @@ export default class TreeDetails extends Component {
                         }}
                     >
                         {this.props.rewards > 0 && this.state.rewardAvailableToday
-                            ? `Pick ${this.props.rewards} AIR Reward Tokens`
+                            ? `Redeem ${this.props.rewards} AIR Reward Tokens`
                             : "Reward Available Tomorrow"}
                     </button>
 
                     <button
-                        className={this.props.onSale ? "hidden" : "full-button"}
+                        className={this.props.onSale ? "hidden" : "wide-button"}
                         onClick={() => {
                             this.setState({
                                 showSellConfirmation1: !this.state.showSellConfirmation1
@@ -109,7 +111,7 @@ export default class TreeDetails extends Component {
                     </button>
 
                     <button
-                        className={this.props.onSale ? "full-button" : "hidden"}
+                        className={this.props.onSale ? "wide-button" : "hidden"}
                         onClick={() => {
                             this.setState({ showCancelSell: !this.state.showCancelSell });
                         }}
@@ -195,45 +197,41 @@ export default class TreeDetails extends Component {
                         >
                             No, keep tree on the market for sale
                          </button>
+                         
                     </div>
-                </div>
-                <br></br>
-                <h2 className="text-center">Owner History</h2>
-                <table className="table table-striped table-light text-center" style={{ overflowX: 'auto', fontSize: '11px' }}>
-                    <thead>
-                        <tr>
-                            <th scope="col">#</th>
-                            <th scope="col">Previous</th>
-                            <th scope="col">New</th>
-                            <th scope="col">Transaction</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {this.state.transferHistory.map((e, k) => {
-                            return (
-                                <tr key={k}>
-                                    <td>{k + 1}</td>
-                                    <td>{e.returnValues.from === "0x0000000000000000000000000000000000000000"
-                                        ? "Creator" : e.returnValues.from}</td>
-                                    <td>{e.returnValues.to == web3.utils.toChecksumAddress(this.props.currentAccount)
-                                        ? "You" : e.returnValues.to}
-                                    </td>
-                                    <td>
-                                        <a
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            href={`https://ropsten.etherscan.io/tx/${
-                                                e.transactionHash
-                                                }`}
-                                        >
-                                            {e.transactionHash}
-                                        </a>
-                                    </td>
+                    <div className="table-details">
+                        <table className="table table-striped table-light" >
+                            <thead>
+                                <tr>
+                                    <th scope="col">#</th>
+                                    <th scope="col">Transactions</th>
                                 </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                            </thead>
+                            <tbody>
+                                {this.state.transferHistory.map((e, k) => {
+                                    return (
+                                        <tr key={k}>
+                                            <td>{k + 1}</td>
+                                            
+                                            <td>
+                                                <a
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    href={`https://ropsten.etherscan.io/tx/${
+                                                        e.transactionHash
+                                                        }`}
+                                                >
+                                                    {e.transactionHash}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>                  
+                </div>
+                
             </div>
         )
     }
