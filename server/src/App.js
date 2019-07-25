@@ -19,7 +19,7 @@ import trees from '../build/contracts/Trees.json'
 //Temporal functions to use in console
 // contract.methods.generateTrees(10).send({from:'0x39e1CF2ef6F2730ae3E980949Cb62a38BB567933'})
 // contract.methods.cancelTreeSell(7).send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB'})
-// contract.methods.buyAirTokens().send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB', value:'200000000000000000'}) //Buy 2 AIR tokens
+// contract.methods.buyAirTokens().send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB', value:'500000000000000000'}) //Buy 5 AIR tokens
 
 // --- CONTRACTS ---
 const contractAddress = trees.networks['3'].address
@@ -131,6 +131,25 @@ class App extends React.Component {
 
   }
 
+  async buyMultipleTrees(type, amount) {
+    //get Tree price
+    let treePrice = await this.getTreePrice(type);
+
+    //Approve AIR tokens
+    let result = await airContract.methods.approve(contractAddress, web3.utils.toWei(String(treePrice * amount))).send({
+      from: this.state.currentAccount
+    })
+    //Send buy call if approve was successful
+    if (result.status === true) {
+      result = await contract.methods.buyMultipleTrees(type, amount).send({
+        from: this.state.currentAccount
+      });
+    }
+
+    return result;
+
+  }
+
   async getTreesOnSale() {
     let result = await contract.methods.getTreesOnSale().call()
     return result;
@@ -153,6 +172,11 @@ class App extends React.Component {
   async checkRewards(ids) {
     let result = await contract.methods.checkRewards(ids).call();
     return result;
+  }
+
+  async getTreePrice(treeType) {
+    let result = await contract.methods.priceByType(treeType).call();
+    return web3.utils.fromWei(result.toString());
   }
 
   async checkAirProductions(ids) {
@@ -212,7 +236,9 @@ class App extends React.Component {
                 getTreeIds={() => this.getTreeIds()}
                 getTreeDetails={id => this.getTreeDetails(id)}
                 buyTree={(id, price) => this.buyTree(id, price)}
+                buyMultipleTrees={(type, amount) => this.buyMultipleTrees(type, amount)}
                 checkAirProductions={(ids) => this.checkAirProductions(ids)}
+                getTreePrice={(treeType) => this.getTreePrice(treeType)}
                 currentAccount={this.state.currentAccount}
               />
             )}

@@ -118,16 +118,13 @@ export default class Dashboard extends Component {
 
     getPastClaims() {
         contract
-            .getPastEvents("LogRewardPicked", {
+            .getPastEvents("RewardPicked", {
                 filter: { owner: this.props.currentAccount },
                 fromBlock: 6007354, //block of contract creation
                 toBlock: "latest"
             })
-            .then(events => {
-
-                this.setState({ rewardClaimHistory })
-            });
-    }
+            .then(rewardClaimHistory => this.setState({ rewardClaimHistory }))
+        }
 
     updateRewards() {
         //TODO: UPDATE THIS
@@ -143,7 +140,6 @@ export default class Dashboard extends Component {
     }
 
     render() {
-        console.log(this.state.rewardClaimHistory);
         const information = (
             <div>
                 <div className="container">
@@ -203,11 +199,10 @@ export default class Dashboard extends Component {
                         </button>
                     </div>
                     <div className="row">
-                        {this.state.treesLoaded ? this.state.allTrees : loading}
+                        {this.state.treesLoaded ? this.state.allTrees : loading}                        
                     </div>
-                    <p>
-                        Total Rewards{" "}
-                        <span className="color-green">{this.state.allRewards.reduce((a, b) => Number(a) + Number(b), 0)}</span>
+                    <p className="details-big margin-auto-and-top" hidden={!this.state.treesLoaded}>
+                        Total Rewards {this.state.allRewards.reduce((a, b) => Number(a) + Number(b), 0)}
                     </p>
                 </div>
                 <div className="spacer" />

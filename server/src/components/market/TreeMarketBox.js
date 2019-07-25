@@ -14,7 +14,7 @@ export default class TreeMarketBox extends Component {
         return `imgs/tree ${random}.svg`
     }
 
-    render() {
+    render() {        
         return (
             <div className="col-6 col-sm-4 tree-container">
                 <img src={this.state.image} className="tree-image" />
@@ -36,12 +36,12 @@ export default class TreeMarketBox extends Component {
                 </p>
                 <p>
                     AIR Production{" "}
-                    <span className="color-green">{this.props.airProduction}</span>
+                    <span className="color-green">{this.props.daysPassed === 0? 0:this.props.airProduction}</span>
                 </p>
                 <p>
-                    <span className="color-blue">{this.props.daysPassed}</span> days
-                    passed after creation
-          </p>
+                    <span className="color-blue">{this.props.daysPassed === 0?"Not yet planted":`${this.props.daysPassed} days
+                    passed after creation`}</span> 
+                </p>
                 <button
                     className="full-button"
                     disabled={this.state.buyClicked}
@@ -52,11 +52,11 @@ export default class TreeMarketBox extends Component {
                                 this.props.price
                             );
                             this.setState({ buyClicked: true });
-                        } catch (e) { }
+                        } catch (e) { console.log(e)}
                     }}
                 >
                     Buy Tree ({this.props.price} AIR)
-          </button>
+                </button>
             </div>
         );
     }
