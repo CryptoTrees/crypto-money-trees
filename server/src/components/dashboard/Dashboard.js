@@ -118,16 +118,13 @@ export default class Dashboard extends Component {
 
     getPastClaims() {
         contract
-            .getPastEvents("LogRewardPicked", {
+            .getPastEvents("RewardPicked", {
                 filter: { owner: this.props.currentAccount },
                 fromBlock: 6007354, //block of contract creation
                 toBlock: "latest"
             })
-            .then(events => {
-
-                this.setState({ rewardClaimHistory })
-            });
-    }
+            .then(rewardClaimHistory => this.setState({ rewardClaimHistory }))
+        }
 
     updateRewards() {
         //TODO: UPDATE THIS
@@ -143,7 +140,6 @@ export default class Dashboard extends Component {
     }
 
     render() {
-        console.log(this.state.rewardClaimHistory);
         const information = (
             <div>
                 <div className="container">

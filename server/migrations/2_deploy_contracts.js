@@ -8,32 +8,25 @@ const CONTRACT_AIR_ALLOWANCE = new BigNumber(
   web3.utils.toWei("100000000", "ether") //100 Million
 );
 
-const TOKEN_TRANSFER = new BigNumber(
-  web3.utils.toWei("10", "ether") // 10 AIR each
-);
-
 const INITIAL_TREES_AMOUNT = 10;
 
 module.exports = (deployer, network, accounts) => {
   deployer
-    .deploy(CryptoTrees)
+    .deploy(CryptoTrees, {from:accounts[0]})
     .then(() => {
-      return deployer.deploy(AirTokens);
+      return deployer.deploy(AirTokens, {from:accounts[0]});
     })
     .then(() => {
-      return deployer.deploy(Trees, CryptoTrees.address, AirTokens.address);
+      return deployer.deploy(Trees, CryptoTrees.address, AirTokens.address, {from:accounts[0]});
     })
     .then(async () => {
       let tokenTreesInst = await CryptoTrees.deployed();
-      await tokenTreesInst.addMinter(Trees.address);
+      await tokenTreesInst.addMinter(Trees.address, {from:accounts[0]});
 
       let treesInst = await Trees.deployed();
-      await treesInst.generateTrees(INITIAL_TREES_AMOUNT);
+      await treesInst.generateTrees(INITIAL_TREES_AMOUNT, {from:accounts[0]});
 
       let airTokensInst = await AirTokens.deployed();
       await airTokensInst.approve(treesInst.address, CONTRACT_AIR_ALLOWANCE, { from: accounts[0] });
-
-      await airTokensInst.transfer(accounts[1], TOKEN_TRANSFER, { from: accounts[0] });
-      await airTokensInst.transfer(accounts[2], TOKEN_TRANSFER, { from: accounts[0] });
     });
 };

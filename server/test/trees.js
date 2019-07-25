@@ -55,7 +55,8 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
     it("can generate 5 new trees", async () => {
       await this.trees.generateTrees(5).should.be.fulfilled;
       let balance = await this.treeTokens.totalSupply();
-      balance.toNumber().should.be.equal(5);
+      // + 10 from deployment
+      balance.toNumber().should.be.equal(15);
     });
 
     it("only owner can generate trees", async () => {
@@ -116,6 +117,16 @@ contract("CryptoTrees", ([owner, admin, user1, user2, random]) => {
       let tree = await this.trees.trees(1);
       tree.onSale.should.be.false;
     });
+
+    it("can buy multiple trees", async () => {
+      await this.airTokens.approve(this.trees.address, web3.utils.toWei("4", "ether"), { from: user1 });
+      await this.trees.buyMultipleTrees(1, 2, {
+        from: user1
+      }).should.be.fulfilled;
+
+      let supply = await this.treeTokens.totalSupply()
+      console.log(supply.toString())
+    })
 
 
   });

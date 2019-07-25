@@ -46,7 +46,7 @@ export default class TreeDetails extends Component {
                 >
                     Back to Dashboard
                 </button>
-                <div  >
+                <div>
                     <a
                         href={`https://ropsten.etherscan.io/token/${window.treeContract.address}?a=${
                             this.props.id
@@ -80,7 +80,7 @@ export default class TreeDetails extends Component {
                     </p>                  
                    
                     <button
-                        className="wide-button"
+                        
                         disabled={
                             this.props.rewards === 0 ||
                             this.state.rewardClicked ||
@@ -99,7 +99,7 @@ export default class TreeDetails extends Component {
                     </button>
 
                     <button
-                        className={this.props.onSale ? "hidden" : "wide-button"}
+                        className={this.props.onSale ? "hidden" : ""}
                         onClick={() => {
                             this.setState({
                                 showSellConfirmation1: !this.state.showSellConfirmation1

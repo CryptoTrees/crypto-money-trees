@@ -131,6 +131,25 @@ class App extends React.Component {
 
   }
 
+  async buyMultipleTrees(type, amount) {
+    //get Tree price
+    let treePrice = await this.getTreePrice(type);
+
+    //Approve AIR tokens
+    let result = await airContract.methods.approve(contractAddress, web3.utils.toWei(String(treePrice * amount))).send({
+      from: this.state.currentAccount
+    })
+    //Send buy call if approve was successful
+    if (result.status === true) {
+      result = await contract.methods.buyMultipleTrees(type, amount).send({
+        from: this.state.currentAccount
+      });
+    }
+
+    return result;
+
+  }
+
   async getTreesOnSale() {
     let result = await contract.methods.getTreesOnSale().call()
     return result;
@@ -153,6 +172,11 @@ class App extends React.Component {
   async checkRewards(ids) {
     let result = await contract.methods.checkRewards(ids).call();
     return result;
+  }
+
+  async getTreePrice(treeType) {
+    let result = await contract.methods.priceByType(treeType).call();
+    return web3.utils.fromWei(result.toString());
   }
 
   async checkAirProductions(ids) {
@@ -212,7 +236,9 @@ class App extends React.Component {
                 getTreeIds={() => this.getTreeIds()}
                 getTreeDetails={id => this.getTreeDetails(id)}
                 buyTree={(id, price) => this.buyTree(id, price)}
+                buyMultipleTrees={(type, amount) => this.buyMultipleTrees(type, amount)}
                 checkAirProductions={(ids) => this.checkAirProductions(ids)}
+                getTreePrice={(treeType) => this.getTreePrice(treeType)}
                 currentAccount={this.state.currentAccount}
               />
             )}

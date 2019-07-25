@@ -2,13 +2,15 @@ import React, { Component } from 'react'
 import Information from '../Information'
 import NavBar from '../NavBar'
 import TreeMarketBox from './TreeMarketBox'
+import TreeTypeBox from './TreeTypeBox'
 
 export default class Market extends Component {
 	constructor(props) {
 		super(props);
 		this.state = {
 			allTrees: [],
-			treesLoaded: false
+			treesLoaded: false,
+			treePrices:[]
 		};
 
 		//if (!this.props.isEthereumDefined) this.props.redirectTo(this.props.history, "/login")
@@ -53,7 +55,7 @@ export default class Market extends Component {
 				// Remove the 0x trees
 				if (details[1] === "0x0000000000000000000000000000000000000000")
 					continue;
-				for (let j = 0; j < 8; j++) {
+				for (let j = 0; j < 9; j++) {
 					if (typeof details[j] === "object") details[j] = parseFloat(details[j]);
 				}
 				allTrees.push(details);
@@ -76,8 +78,29 @@ export default class Market extends Component {
 						key={detail[0]}
 					/>
 				));
-			this.setState({ allTrees, treesLoaded: true });
+			
+			//Get tree prices for all 4 types
+			let treePrices =[];
+			for (let i = 0; i < 4; i++) {
+				treePrices.push(await this.props.getTreePrice(i));
+			}
+			this.setState({ allTrees, treesLoaded: true, treePrices });
 		}
+	}
+
+	renderBulkSells() {
+		let treeTypes = this.state.treePrices;
+
+		treeTypes = treeTypes.map((price, key) => (
+			<TreeTypeBox
+				buyMultipleTrees={this.props.buyMultipleTrees}
+				price={price}
+				key={key}
+				type={key}
+			/>
+		))
+		// console.log('prices',treeTypes);
+		return treeTypes;
 	}
 
 	render() {
@@ -90,15 +113,20 @@ export default class Market extends Component {
 		const main = (
 			<div>
 				<div className="container">
-					<div className={this.state.treesLoaded ? "row" : "hidden"}>
-						<div className="top-spacer" />
+				<div className="spacer-7" />
+					<h1 hidden={!this.state.treesLoaded}>BUY IN BULK</h1>
+					<div className={this.state.treesLoaded ? "row" : "hidden"}>	
+						{this.renderBulkSells()}
+					</div>
+					<div className="spacer-7" />
+					<h1 hidden={!this.state.treesLoaded}>MARKET</h1>
+					<div className={this.state.treesLoaded ? "row" : "hidden"}>						
 						{this.state.allTrees}
 					</div>
 					<div className={this.state.treesLoaded ? "hidden" : "row"}>
 						{loading}
 					</div>
 				</div>
-				<div className="spacer" />
 			</div>
 		);
 
