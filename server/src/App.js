@@ -19,7 +19,7 @@ import trees from '../build/contracts/Trees.json'
 //Temporal functions to use in console
 // contract.methods.generateTrees(10).send({from:'0x39e1CF2ef6F2730ae3E980949Cb62a38BB567933'})
 // contract.methods.cancelTreeSell(7).send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB'})
-// contract.methods.buyAirTokens().send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB', value:'200000000000000000'}) //Buy 2 AIR tokens
+// contract.methods.buyAirTokens().send({from:'0x69310fC745bf6ff51966AE456Ee09Fa5402F5FcB', value:'500000000000000000'}) //Buy 5 AIR tokens
 
 // --- CONTRACTS ---
 const contractAddress = trees.networks['3'].address

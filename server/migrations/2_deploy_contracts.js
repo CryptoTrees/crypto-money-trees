@@ -24,7 +24,7 @@ module.exports = (deployer, network, accounts) => {
       await tokenTreesInst.addMinter(Trees.address, {from:accounts[0]});
 
       let treesInst = await Trees.deployed();
-      await treesInst.generateTrees(INITIAL_TREES_AMOUNT, {from:accounts[0]});
+      await treesInst.generateTrees(INITIAL_TREES_AMOUNT, 1, {from:accounts[0]});
 
       let airTokensInst = await AirTokens.deployed();
       await airTokensInst.approve(treesInst.address, CONTRACT_AIR_ALLOWANCE, { from: accounts[0] });

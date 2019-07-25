@@ -69,7 +69,7 @@ export default class Market extends Component {
 					<TreeMarketBox
 						id={detail[0]}
 						owner={detail[1]}
-						daysPassed={Math.floor(
+						daysPassed={detail[5] === 0 ? 0:Math.floor(
 							(Math.floor(Date.now() / 1000) - detail[5]) / 86400
 						)} // How many days passed after the creation of this tree
 						airProduction={detail[2]}
@@ -81,9 +81,10 @@ export default class Market extends Component {
 			
 			//Get tree prices for all 4 types
 			let treePrices =[];
-			for (let i = 0; i < 4; i++) {
+			for (let i = 1; i < 4; i++) {
 				treePrices.push(await this.props.getTreePrice(i));
 			}
+
 			this.setState({ allTrees, treesLoaded: true, treePrices });
 		}
 	}
@@ -99,7 +100,6 @@ export default class Market extends Component {
 				type={key}
 			/>
 		))
-		// console.log('prices',treeTypes);
 		return treeTypes;
 	}
 
@@ -114,12 +114,12 @@ export default class Market extends Component {
 			<div>
 				<div className="container">
 				<div className="spacer-7" />
-					<h1 hidden={!this.state.treesLoaded}>BUY IN BULK</h1>
+					<h1 className="details-big" hidden={!this.state.treesLoaded}>BUY IN BULK</h1>
 					<div className={this.state.treesLoaded ? "row" : "hidden"}>	
 						{this.renderBulkSells()}
 					</div>
 					<div className="spacer-7" />
-					<h1 hidden={!this.state.treesLoaded}>MARKET</h1>
+					<h1 className="details-big" hidden={!this.state.treesLoaded}>OPEN MARKET</h1>
 					<div className={this.state.treesLoaded ? "row" : "hidden"}>						
 						{this.state.allTrees}
 					</div>

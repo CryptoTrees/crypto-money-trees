@@ -36,11 +36,11 @@ export default class TreeMarketBox extends Component {
                 </p>
                 <p>
                     AIR Production{" "}
-                    <span className="color-green">{this.props.airProduction}</span>
+                    <span className="color-green">{this.props.daysPassed === 0? 0:this.props.airProduction}</span>
                 </p>
                 <p>
-                    <span className="color-blue">{this.props.daysPassed}</span> days
-                    passed after creation
+                    <span className="color-blue">{this.props.daysPassed === 0?"Not yet planted":`${this.props.daysPassed} days
+                    passed after creation`}</span> 
                 </p>
                 <button
                     className="full-button"
